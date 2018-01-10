@@ -31,7 +31,7 @@ Output: 10
 Output: true
 ```
 
-* Assignment: `def`
+* Global assignment: `def`
 ```
 (def foo 5)
 This is the same as "foo = 5" in JavaScript.
