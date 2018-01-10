@@ -6,9 +6,9 @@ Differently from other languages that compile to JavaScript, it does not try to 
 In summary, it's a programming language that combines JavaScript's high level features, ridiculous cross-platformness and blazing speed with lisp's awesome, powerful syntax loved by hackers all around the world. For more info on it, I recommend reading Paul Graham's "Beating the Averages": http://www.paulgraham.com/avg.html
 
 #### Installation
-There's no installation guide yet (this will be updated soon). For now, just download LiScript, require the file on node.s or include it in a HTML script tag and call `LiScript.compile("(your source code)")`. This will return the compiled JavaScript. 
+There's no installation guide yet (this will be updated soon). For now, just download LiScript, require the file on node.s *or Seamonkey `js` shell,* or include it in a HTML script tag and call `LiScript.compile("(your source code)")`. This will return the compiled JavaScript. 
 
-**You can also try it online: http://evanhahn.github.com/Try-LiScript/**
+~~**You can also try it online: http://evanhahn.github.com/Try-LiScript/**~~
 
 #### Tutorial / Using
 Using LiScript is very easy. I'll expose the whole language with examples. If you find trouble understanding those, you could may on S-Expressions. Looking at the source could be a good idea. Also, feel free to contact me! Notice  that this is the crude form of the language - to actually use it you'll certainly load with macros which will calibre the syntax to fill your needs. The language core is very easy. It has 4 basic forms, which map directly to their JavaScript counterparts:
@@ -19,15 +19,15 @@ Using LiScript is very easy. I'll expose the whole language with examples. If yo
 
 It also comes with the following functions out-of-the-box:
 
-* Math operators: `sum sub mul div mod`
+* Math operators: `+ - * / %`
 ```
-(sum 1 2 3 (mul 2 2)) 
+(+ 1 2 3 (* 2 2)) 
 Output: 10
 ```
 
-* Boolean comparisons: `and or eq dif less greater lesseq greatereq`
+* Boolean comparisons: `and or = != < > <= >=`
 ```
-(eq 2 2)
+(= 2 2)
 Output: true
 ```
 
@@ -35,6 +35,11 @@ Output: true
 ```
 (def foo 5)
 This is the same as "foo = 5" in JavaScript.
+```
+* (Multiple) local variable assignment: `let`
+```
+(let a 1 b 2 c 3)
+This is the same as "var a=1, b=2, c=3" in JavaScript.
 ```
 
 * Conditional: `if`
@@ -109,12 +114,12 @@ That is much simpler than traditional reader macros! For more advanced cases you
 Well, that's it! This is the whole language. Again, the out-of-the-box package must be temperated with macros. For example, you could certainly improve the loops - a "for" macro could work as CoffeeScript's array comprehension. A "let" macro might prove handy, and a facility to concatenate arrays would make defining new macros easier. The point is: LiScript allows you to do whatever you want; you control the language!
 
 #### Next steps: 
-LiScript is just a first step towards a goal: increasing programmer productivity to new levels. There is still needs some work - for example, "var x=3" is not an expression in JavaScript. Because of this, all variables are defined on the global scope. I'm thinking in a solution for this. Anyway, the idea is reaching a point of stability where the language doesn't need to be ever changed anymore, making it future-proof. At this point, efforts must be done towards the concretization of:
+LiScript is just a first step towards a goal: increasing programmer productivity to new levels. There is still needs some work. ~~- for example, "var x=3" is not an expression in JavaScript. Because of this, all variables are defined on the global scope. I'm thinking in a solution for this. Anyway, the idea is reaching a point of stability where the language doesn't need to be ever changed anymore, making it future-proof. At this point, efforts must be done towards the concretization of:
 
-1. A centralized, cloud-based, taggeable, computer-analyzable, queriable database of functions and macros (NOT libraries!)
+~~1. A centralized, cloud-based, taggeable, computer-analyzable, queriable database of functions and macros (NOT libraries!)~~
 
-2. A powerful, shortcut-optimized, VIM inspired, web-based IDE to access those.
+~~2. A powerful, shortcut-optimized, VIM inspired, web-based IDE to access those.~~
 
-3. A huge community with a good communication system. (this is the hard part ;/)
+~~3. A huge community with a good communication system. (this is the hard part ;/)~~
 
-If this all interests you, feel free to contact me!
+~~If this all interests you, feel free to contact me!~~
