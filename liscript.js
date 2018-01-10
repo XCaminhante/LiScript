@@ -2,7 +2,6 @@ LiScript = (function(){
   var slice = [].slice;
   var translations = {
     'fn':function(argList,body){
-      //~ return '(function('+argList.join(',')+')'+'{return '+slice.call(arguments,1).map(tree_to_js).join(",")+'})';
       return '(function('+argList.join(',')+')'+
         '{'+slice.call(arguments,1,-1).map(tree_to_js).join(";")+
         ';return '+slice.call(arguments,-1).map(tree_to_js).join(",")+';})';
@@ -138,8 +137,3 @@ LiScript = (function(){
     'tree_to_string':tree_to_string
   };
 })();
-
-var prog = '(fn () (let a 1 b 2 c 3) c)'
-println(LiScript.compile(prog))
-println(eval(LiScript.compile(prog)))
-//~ {a=1;b=2}
