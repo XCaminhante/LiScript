@@ -56,6 +56,11 @@ LiScript = (function () {
     'arr': function () {
       return '(['+slice.call(arguments).map(tree_to_js).join(',')+'])';
     },
+    // places a commentary in the generated code
+    // ; this is a commentary. because of technical questions, you must use a period at the end of the line.
+    'comm': function () {
+      return '/*' + slice.call(arguments).join(' ') + '*/'
+    },
     // permits to set a value into a deep object
     // (set a "b" "c" 3)
     // in JavaScript: a["b"]["c"]=3
@@ -177,7 +182,7 @@ LiScript = (function () {
     '<':'<',
     '>':'>',
     '<=':'<=',
-    '>=':'>='
+    '>=':'>=',
   };
   for (var op in operators) {(function (op) {
     translations[op] = function () {
@@ -198,6 +203,7 @@ LiScript = (function () {
     '"':{close:'"',head:'str'},
     "[":{close:"]",head:'arr'},
     "{":{close:"}",head:'obj'},
+    ';':{close:'.',head:'comm'},
   };
   var add_reader = function (head,open,close) { readers[open] = {close:close,head:head}; console.log(readers); };
   var parse_tree = function (str) {
