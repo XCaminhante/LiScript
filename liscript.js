@@ -58,12 +58,6 @@ LiScript = (function () {
     'arr': function () {
       return '(['+slice.call(arguments).map(tree_to_js).join(',')+'])';
     },
-    // comments a piece of code
-    // ; this is a commentary. because of technical questions, you must use a period at the end of the line.
-    'comm': function () {
-      //~ return '/*' + slice.call(arguments).join(' ') + '*/'
-      return ''
-    },
     // permits to set a value into a deep object
     // (set a "b" "c" 3)
     // in JavaScript: a["b"]["c"]=3
@@ -94,7 +88,10 @@ LiScript = (function () {
     // in JavaScript: a=1; b=2; c=3
     // this isn't a valid JavaScript expression, it does not return a value to its caller
     'def': function (name,value) {
-      if (arguments.length < 2 || arguments.length%2 != 0) throw 'def: invalid number of arguments';
+      if (arguments.length < 2 || arguments.length%2 != 0) {
+        for(var a = 0; a<arguments.length; a++) println(arguments[a])
+        throw 'def: invalid number of arguments';
+      }
       for (var i=1, pairs=[]; i<arguments.length; i+=2)
         pairs.push([arguments[i-1],arguments[i]]);
       return '{' + pairs.map(function (a) {return tree_to_js(a[0])+'='+tree_to_js(a[1])}).join(',')+'}'
@@ -134,7 +131,10 @@ LiScript = (function () {
     },
     // runs a switch inside a closure
     // when a test pair matches, all commands are evaluated and the last value is returned
-    // (switch abc (1 (something 1)) (2 (something 2)) ((something "default")) )
+    // (switch abc
+    //    (1 (something 1))
+    //    (2 (something 2))
+    //    ((something "default")) )
     // in JavaScript: switch(abc) {
     //    case 1: return something(1); break;
     //    case 2: return something(2); break;
@@ -142,7 +142,6 @@ LiScript = (function () {
     'switch': function (value,tests_and_conditions) {
       var ret = '(function(_){switch(_){'
       for (var a = 1; a<arguments.length; a++) {
-        if (arguments[a][0] == 'comm') continue
         if (a == arguments.length-1 && arguments[a].length == 1) {
           ret += 'default:return '+tree_to_js(arguments[a][0])
           break
@@ -185,7 +184,7 @@ LiScript = (function () {
           })
           .join(')(')+'))'
     },
-    // execute as many commands as desired, (possibly) inside a closure
+    // execute as many commands as desired, inside a closure
     // intended to be used where only one command is permitted (as within "if" or "while")
     // (do (something 1) (something 2))
     // in JavaScript: something(1);something(2)
@@ -196,6 +195,46 @@ LiScript = (function () {
         slice.call(arguments,0,-1).map(tree_to_js).join(";")+
         ';return '+slice.call(arguments,-1).map(tree_to_js).join(",")+
         '})()';
+    },
+    // execute as many commands as desired, inside a closure, always return null
+    // intended to be used where only one command is permitted (as within "if" or "while")
+    // (void (something 1) (something 2))
+    'void': function () {
+      if (arguments.length == 0)
+        return ''
+      return '(function(){'+
+        slice.call(arguments).map(tree_to_js).join(";")+
+        ';return null})()';
+    },
+    // try to run a piece of code in a closure
+    // in case of exception it runs "catch" body, and always runs "finally" body
+    // the "finally" body argument is optional
+    // if you include a "finally" argument, the last value will be returned
+    // you must pass the commands inside parenthesis pairs (syntax similar with "switch"'s one)
+    // (try
+    //  ( (something 1)(something 2) )
+    //  ( (error _) )
+    //  ( (finally 1)(finally 2) ) )
+    // in JavaScript: try { something(1);something(2); } catch (_) { error(_) } finally { finally(1);finally(2); }
+    'try': function (try_body,catch_body,finally_body) {
+      if (arguments.length < 2 || arguments.length > 3) throw 'try: invalid number of arguments'
+      ret = '(function(){try{'+
+        slice.call(arguments[0]).map(tree_to_js).join(';')+
+        '}catch(_){'+
+        slice.call(arguments[1]).map(tree_to_js).join(';')
+      if (arguments.length == 3) {
+        ret += '}finally{'+
+          slice.call(arguments[2],0,-1).map(tree_to_js).join(';')+
+          ';return '+slice.call(arguments[2],-1).map(tree_to_js)
+      }
+      ret += '}})()'
+      return ret
+    },
+    // throws an exception
+    // this isn't a valid JavaScript expression, it does not return a value to its caller
+    'throw': function () {
+      if (arguments.length != 1) 'throw: invalid number of arguments'
+      return '{throw '+tree_to_js(arguments[0])+'}'
     },
     // permits using fluent interfaces, or dot-syntax deep objects access
     // (. "12345" (replace "1" "9") (replace "3" "7") )
@@ -245,7 +284,6 @@ LiScript = (function () {
     '"':{close:'"',head:'str'},
     "[":{close:"]",head:'arr'},
     "{":{close:"}",head:'obj'},
-    ';':{close:'.',head:'comm'},
   };
   var add_reader = function (head,open,close) { readers[open] = {close:close,head:head}; console.log(readers); };
   var parse_tree = function (str) {
@@ -288,12 +326,17 @@ LiScript = (function () {
       : '('+tree_to_js(ast[0])+'('+ast.slice(1).map(function (a) {return tree_to_js(a);}).join(',')+'))';
   };
   var compile = function (text) {
-    return parse_tree("("+text.replace(/[\n\t]/g,"")+")")
+    var ret = parse_tree("("+
+      text
+        .replace(/^[\s]*;([^\n]*)$/mg,"")
+        .replace(/[\n\t]/g,"")
+    +")")
       .map(function (ast) {
-        //~ return tree_to_js(parse_tree(tree_to_string(ast)));
         return tree_to_js(ast);
       })
-      .join(";");
+      .join(";")
+      .replace(/[;]{2,}/g,';')
+    return ret
   };
   var evaluate = function (text) {
     return eval(compile(text));
