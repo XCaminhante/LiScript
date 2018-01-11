@@ -34,7 +34,9 @@ LiScript = (function () {
     // (if cond (case_true) (case_false))
     'if': function (cond,case_true,case_false) {
       if (arguments.length < 1) throw 'if: invalid number of arguments'
-      return '('+tree_to_js(cond)+'?'+tree_to_js(case_true)+':'+tree_to_js(case_false)+')';
+      return '('+tree_to_js(cond)+'?'+
+        tree_to_js(case_true)+':'+
+        (typeof(case_false)==='undefined'?null:tree_to_js(case_false))+')';
     },
     // coalesce terms into a string
     // (str word1 word2 word3 word4)
@@ -56,10 +58,11 @@ LiScript = (function () {
     'arr': function () {
       return '(['+slice.call(arguments).map(tree_to_js).join(',')+'])';
     },
-    // places a commentary in the generated code
+    // comments a piece of code
     // ; this is a commentary. because of technical questions, you must use a period at the end of the line.
     'comm': function () {
-      return '/*' + slice.call(arguments).join(' ') + '*/'
+      //~ return '/*' + slice.call(arguments).join(' ') + '*/'
+      return ''
     },
     // permits to set a value into a deep object
     // (set a "b" "c" 3)
@@ -94,7 +97,7 @@ LiScript = (function () {
       if (arguments.length < 2 || arguments.length%2 != 0) throw 'def: invalid number of arguments';
       for (var i=1, pairs=[]; i<arguments.length; i+=2)
         pairs.push([arguments[i-1],arguments[i]]);
-      return '{' + pairs.map(function (a) {return a[0]+'='+tree_to_js(a[1])}).join(',')+'}'
+      return '{' + pairs.map(function (a) {return tree_to_js(a[0])+'='+tree_to_js(a[1])}).join(',')+'}'
     },
     // runs a while-loop inside a closure
     // (while (let a 1) (< a 10) (console.log a) (def a (+ a 1)) )
@@ -129,6 +132,30 @@ LiScript = (function () {
           '}})'+
         '('+tree_to_js(arguments[0])+')'
     },
+    // runs a switch inside a closure
+    // when a test pair matches, all commands are evaluated and the last value is returned
+    // (switch abc (1 (something 1)) (2 (something 2)) ((something "default")) )
+    // in JavaScript: switch(abc) {
+    //    case 1: return something(1); break;
+    //    case 2: return something(2); break;
+    //    default: return something("default"); }
+    'switch': function (value,tests_and_conditions) {
+      var ret = '(function(_){switch(_){'
+      for (var a = 1; a<arguments.length; a++) {
+        if (arguments[a][0] == 'comm') continue
+        if (a == arguments.length-1 && arguments[a].length == 1) {
+          ret += 'default:return '+tree_to_js(arguments[a][0])
+          break
+        }
+        if (arguments[a].length < 2) throw 'switch: invalid number of subarguments'
+        ret += 'case '+tree_to_js(arguments[a][0])+':'+
+          slice.call(arguments[a],1,-1).map(tree_to_js).join(';')+
+          ';return '+slice.call(arguments[a],-1).map(tree_to_js)+
+          ';break;'
+      }
+      ret += '}})('+tree_to_js(arguments[0])+')'
+      return ret
+    },
     // calls a function (can be a deep object), passing (preferably) a array as its arguments
     // (call a "b" "c" [1 2 3])
     // in JavaScript: a["b"]["c"].apply(this,[1,2,3])
@@ -137,11 +164,26 @@ LiScript = (function () {
       if (arguments.length < 2) throw 'call: invalid number of arguments'
       if (arguments.length == 2) {
         return '('+tree_to_js(arguments[0])+
-          '.apply(this,'+slice.call(arguments,-1).map(tree_to_js)+'))';
+          '.apply((typeof(this)!="undefined"?this:null),'+slice.call(arguments,-1).map(tree_to_js)+'))';
       }
       return '('+tree_to_js(arguments[0])+
         '['+slice.call(arguments,1,-1).map(tree_to_js).join('][')+']'+
         '.apply(this,'+slice.call(arguments,-1).map(tree_to_js)+'))';
+    },
+    // calls a function returned by a function returned by a function...
+    // (chain a [1 2 3] [4 5 6])
+    // in JavaScript: a(1,2,3)(4,5,6)
+    'chain': function (obj,values) {
+      if (arguments.length < 2) throw 'chain: invalid number of arguments'
+      return '('+tree_to_js(arguments[0])+
+        '('+slice.call(arguments,1).map(tree_to_js)
+          .map(function(a){
+            if (a.match(/^\(\[|\]\)$/g) == null || a.match(/^\(\[|\]\)$/g).length != 2) {
+              throw 'chain: invalid argument type'
+            }
+            return a.replace(/^\(\[|\]\)$/g,'')
+          })
+          .join(')(')+'))'
     },
     // execute as many commands as desired, (possibly) inside a closure
     // intended to be used where only one command is permitted (as within "if" or "while")
@@ -150,8 +192,6 @@ LiScript = (function () {
     'do': function () {
       if (arguments.length == 0)
         return ''
-      if (arguments.length == 1)
-        return '('+tree_to_js(arguments[0])+')'
       return '(function(){'+
         slice.call(arguments,0,-1).map(tree_to_js).join(";")+
         ';return '+slice.call(arguments,-1).map(tree_to_js).join(",")+
@@ -183,6 +223,8 @@ LiScript = (function () {
     '>':'>',
     '<=':'<=',
     '>=':'>=',
+    '<<':'<<',
+    '>>':'>>',
   };
   for (var op in operators) {(function (op) {
     translations[op] = function () {
