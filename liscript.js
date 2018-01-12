@@ -6,15 +6,23 @@ LiScript = (function () {
     // in JavaScript: function (arg1, arg2, arg3) {return arg1+arg2+arg3}
     'fun': function (argList,body) {
       if (arguments.length < 2) throw 'fun: invalid number of arguments'
-      return '(function ('+argList.join(',')+')'+
+      return '(function('+argList.join(',')+')'+
         '{'+slice.call(arguments,1,-1).map(tree_to_js).join(";")+
+        ';return '+slice.call(arguments,-1).map(tree_to_js).join(",")+';})';
+    },
+    // creates a function with a unique default argument "_", intended for quick jobs
+    // (lam (+ _ 1))
+    'lam': function (body) {
+      if (arguments.length < 1) throw 'lam: invalid number of arguments'
+      return '(function(_)'+
+        '{'+slice.call(arguments,0,-1).map(tree_to_js).join(";")+
         ';return '+slice.call(arguments,-1).map(tree_to_js).join(",")+';})';
     },
     // finish the actual functions run, returning a value
     // (ret 1)
     // this isn't a valid JavaScript expression, it does not return a value to its caller
     'ret': function (val) {
-      if (arguments.length != 1) throw 'ret: invalid number of arguments'
+      //~ if (arguments.length != 1) throw 'ret: invalid number of arguments'
       return 'return ' + tree_to_js(val)
     },
     // instantiates a new object
@@ -22,14 +30,6 @@ LiScript = (function () {
     'new': function (class_name,construct_args) {
       if (arguments.length < 1) throw 'new: invalid number of arguments'
       return '(new ' +  arguments[0] + '(' + slice.call(arguments,1).map(tree_to_js).join(',') + '))'
-    },
-    // creates a function with a unique default argument "_", intended for quick jobs
-    // (lam (+ _ 1))
-    'lam': function (body) {
-      if (arguments.length < 1) throw 'lam: invalid number of arguments'
-      return '(function (_)'+
-        '{'+slice.call(arguments,0,-1).map(tree_to_js).join(";")+
-        ';return '+slice.call(arguments,-1).map(tree_to_js).join(",")+';})';
     },
     // (if cond (case_true) (case_false))
     'if': function (cond,case_true,case_false) {
@@ -51,7 +51,7 @@ LiScript = (function () {
       if (arguments.length%2 != 0) throw 'obj: invalid number of arguments'
       for (var i=1, pairs=[]; i<arguments.length; i+=2)
         pairs.push([arguments[i-1],arguments[i]]);
-      return '({'+pairs.map(function (a) {return '"'+a[0]+'":'+tree_to_js(a[1])}).join(',')+'})';
+      return '({'+pairs.map(function (a) {return tree_to_js(a[0])+':'+tree_to_js(a[1])}).join(',')+'})';
     },
     // [1 2 3]
     // in JavaScript: [1, 2, 3]
@@ -79,22 +79,21 @@ LiScript = (function () {
     // this isn't a valid JavaScript expression, it does not return a value to its caller
     'let': function (name,value) {
       if (arguments.length < 2 || arguments.length%2 != 0) throw 'let: invalid number of arguments';
-      for (var i=1, pairs=[]; i<arguments.length; i+=2)
-        pairs.push([arguments[i-1],arguments[i]]);
-      return '{var ' + pairs.map(function (a) {return a[0]+'='+tree_to_js(a[1])}).join(',')+'}'
+      return translations['def'].apply(null,arguments)
+        .replace(/^\(/g,'{var ')
+        .replace(/\)$/g,'}')
     },
-    // define global scope variables
+    // define global scope variables (or redefine values of already existent ones) inside a closure
     // (def a 1 b 2 c 3)
-    // in JavaScript: a=1; b=2; c=3
-    // this isn't a valid JavaScript expression, it does not return a value to its caller
+    // in JavaScript: a=1, b=2, c=3
     'def': function (name,value) {
-      if (arguments.length < 2 || arguments.length%2 != 0) {
-        for(var a = 0; a<arguments.length; a++) println(arguments[a])
-        throw 'def: invalid number of arguments';
+      if (arguments.length < 2 || arguments.length%2 != 0) throw 'def: invalid number of arguments';
+      if (arguments.length == 2) {
+        return '('+tree_to_js(arguments[0])+'='+tree_to_js(arguments[1])+')'
       }
       for (var i=1, pairs=[]; i<arguments.length; i+=2)
         pairs.push([arguments[i-1],arguments[i]]);
-      return '{' + pairs.map(function (a) {return tree_to_js(a[0])+'='+tree_to_js(a[1])}).join(',')+'}'
+      return '(' + pairs.map(function (a) {return tree_to_js(a[0])+'='+tree_to_js(a[1])}).join(',')+')'
     },
     // runs a while-loop inside a closure
     // (while (let a 1) (< a 10) (console.log a) (def a (+ a 1)) )
@@ -105,11 +104,11 @@ LiScript = (function () {
     'while': function (preset,cond,body) {
       if (arguments.length < 2) throw 'while: invalid number of arguments'
       if (arguments.length == 2) {
-        return '(function () {'+
+        return '(function(){'+
           'while('+tree_to_js(arguments[0])+')'+
           '{'+slice.call(arguments,1).map(tree_to_js).join(';')+'}})()';
       }
-      return '(function () {'+
+      return '(function(){'+
         tree_to_js(arguments[0])+
         ';while('+tree_to_js(arguments[1])+')'+
         '{'+slice.call(arguments,2).map(tree_to_js).join(';')+'}})()';
@@ -122,7 +121,7 @@ LiScript = (function () {
     // val: the value of this same member
     'iter': function (obj,code) {
       if (arguments.length < 2) throw 'iter: invalid number of arguments'
-      return '(function (obj_) {'+
+      return '(function(obj_){'+
         'for(var key in obj_)'+
           '{var val=obj_[key];'+
           slice.call(arguments,1).map(tree_to_js).join(';')+
@@ -156,10 +155,10 @@ LiScript = (function () {
       return ret
     },
     // calls a function (can be a deep object), passing (preferably) a array as its arguments
-    // (call a "b" "c" [1 2 3])
+    // (aply a "b" "c" [1 2 3])
     // in JavaScript: a["b"]["c"].apply(this,[1,2,3])
     // in JavaScript: a["b"]["c"](1,2,3) // equivalent in this case
-    'call': function (obj,method,args) {
+    'aply': function (obj,method,args) {
       if (arguments.length < 2) throw 'call: invalid number of arguments'
       if (arguments.length == 2) {
         return '('+tree_to_js(arguments[0])+
@@ -246,17 +245,29 @@ LiScript = (function () {
         .map(function (a) {return a.replace(/^\(|\)$/g,'')})
         .join('.')+')';
     },
+    // double negation
+    'yes': function () {
+      if (arguments.length != 1) throw 'yes: invalid number of arguments'
+      return '(!!'+tree_to_js(arguments[0])+')'
+    },
   };
   // infix operators
   var operators = {
     'and':'&&',
     'or':'||',
     '=':'==',
+    'same':'===',
     '!=':'!=',
+
     '+':'+',
     '-':'-',
     '*':'*',
     '/':'/',
+    'add':'+=',
+    'sub':'-=',
+    'mul':'*=',
+    'div':'/=',
+
     '%':'%',
     '<':'<',
     '>':'>',
