@@ -83,7 +83,7 @@ LiScript = (function () {
         .replace(/^\(/g,'{var ')
         .replace(/\)$/g,'}')
     },
-    // define global scope variables (or redefine values of already existent ones) inside a closure
+    // define global scope variables (or redefine values of already existent ones)
     // (def a 1 b 2 c 3)
     // in JavaScript: a=1, b=2, c=3
     'def': function (name,value) {
