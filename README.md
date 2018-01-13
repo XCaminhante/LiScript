@@ -164,7 +164,7 @@ The dot operator (`.`) is very useful to accessing fluent interfaces (chained na
 With `chain` you can conveniently call a function returned by a function, returned by a function, returned...
 ```
 (chain func [1 2 3] [4 5 6] [7 8 9])
-; func(1,2,3)(4,5,6)
+; func(1,2,3)(4,5,6)(7,8,9)
 ; That is cleaner than it's equivalent in plain syntax:
 (((func 1 2 3) 4 5 6) 7 8 9)
 ```
