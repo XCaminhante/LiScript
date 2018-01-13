@@ -10,7 +10,6 @@ You can:
 * pass your code by `LiScript.compile("(your source code)")` (returns the compiled JavaScript code);
 * ???
 * PROFIT!
-Your code needs to use linefeeds, or unexpected errors will occur (comments won't work too).
 
 #### Quick Tutorial / Using
 
