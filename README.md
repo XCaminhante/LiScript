@@ -73,7 +73,7 @@ I strongly recommend to always use `let`, except if you really want to create gl
 * Conditional: `if switch`
 ```
 (let rnd (Math.random))
-(if (< rnd 0.05)
+(if (< rnd 0.5)
     (console.log "You won :D")
     (console.log "Bad luck, try again."))
 ; Output: who knows?
