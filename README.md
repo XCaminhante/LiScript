@@ -2,6 +2,7 @@
 LiScript replaces JavaScript's syntax by lisp's powerful S-Expressions and macro system.
 
 #### Installation
+
 There's no established installation procedure for now.
 You can:
 * download liscript.js;
@@ -12,6 +13,7 @@ You can:
 Your code needs to use linefeeds, or unexpected errors will occur (comments won't work too).
 
 #### Quick Tutorial / Using
+
 The language core is very easy. It has 4 basic forms, which map directly to their JavaScript counterparts:
 
 * String: `"this is a string"`
@@ -35,7 +37,7 @@ Builtin functions:
 
 * Math operators: `+ - * / %`
 ```
-(+ 1 2 3 (* 2 2)) 
+(+ 1 2 3 (* 2 2))
 ; 10
 ```
 * Boolean comparisons: `and or same = != < > <= >= yes`
@@ -44,10 +46,11 @@ Builtin functions:
 ; true
 ```
 `same` is the equivalent of `===` in JavaScript.
+
 `yes` is a convenience function, it does a double negation:
 ```
 (yes someObject)
-; !(!(someObject) ) 
+; !(!(someObject) )
 ```
 * Modifying atribution operators: `add sub mul div mod`
 ```
@@ -61,6 +64,7 @@ Builtin functions:
 ; abc=1, def=2, ghi=3
 ```
 * Local (multiple) assignment: `let`
+
 `let` doesn't create a valid JavaScript expression (i.e. you can't expect a value coming from a `let` call).
 I strongly recommend to always use `let`, except if you really want to create global variables.
 ```
@@ -81,9 +85,9 @@ It returns the value of the second command in the body which was selected (or th
 (let value 1)
 (switch value
         (1 (console.log "One"))
-	(2 (console.log "Two"))
-	(3 (console.log "Three"))
-	( (console.log "Default") ) )
+        (2 (console.log "Two"))
+        (3 (console.log "Three"))
+        ( (console.log "Default") ) )
 ; Output: "One"
 ```
 * Function definition: `fun lam ret`
@@ -97,12 +101,14 @@ It returns the value of the second command in the body which was selected (or th
 ; function (_) { return _+1; };
 ```
 `ret` exits the function prematurely.
+
 Note that `return` isn't a valid expression in JavaScript (i.e. you can't do `var a = return 1;`)
 ```
 (fun (a b) (ret 4) (+ a b))
 ; function (a, b) { return 4; return a+b; };
 ```
 * Closure definition: `do void`
+
 `do` permits you to create really temporary local variables, or place multiple commands where just there's place for one.
 ```
 (do (something 1) (something 2) (something 3) )
@@ -137,21 +143,24 @@ The dot operator (`.`) is very useful to accessing fluent interfaces (chained na
 ```
 * Loop: `while`
 ```
-(while (def i 0) (< i 4) 
+(while (def i 0) (< i 4)
        (console.log i) (add i 1) )
 ; Output: 0 1 2 3
 ```
 * Iteration: `iter`
+
 `iter` binds 3 temporary variables inside a closure:
+
 `obj_`: the object being iterated;
 `key`: the key being accessed at the moment;
 `val`: the value being accessed at the moment.
 ```
-(iter {a 1 b 2 c 3} 
+(iter {a 1 b 2 c 3}
       (console.log [key val]))
 ; Output: ["a",1] ["b",2] ["c",3]
 ```
 * Function chain calling: `chain`
+
 With `chain` you can conveniently call a function returned by a function, returned by a function, returned...
 ```
 (chain func [1 2 3] [4 5 6] [7 8 9])
@@ -160,6 +169,7 @@ With `chain` you can conveniently call a function returned by a function, return
 (((func 1 2 3) 4 5 6) 7 8 9)
 ```
 * Exceptions: `try throw`
+
 `try`'s sintax resembles `switch`'s syntax.
 Like JavaScript's `try`, you have 3 (1 optional) code bodies: the normal code body (first `try`'s part), the exception treatment code body (`catch`'s body) and the finisher body (`finally`'s body).
 You must place your commands inside the correspondent parentheses body pair.
@@ -181,6 +191,7 @@ Note that `throw` isn't a valid JavaScript expression, it's a statement (it does
 ; throw("Incorrect value");
 ```
 * Macro: `defmacro`
+
 Macros work by modifying the code **before** it's compiled to JavaScript, and it couldn't be easier: just return an array of strings representing the new form of your code! Let's make a macro that inverts an expression:
 ```
 (defmacro swap (a b) [b a])
@@ -189,23 +200,24 @@ Macros work by modifying the code **before** it's compiled to JavaScript, and it
 ```
 Another example:
 ```
-(defmacro unless (cond T F) ["if" cond F T]) 
-(def yell (fn (a) (call a "toUpperCase"))) 
+(defmacro unless (cond T F) ["if" cond F T])
+(def yell (fn (a) (call a "toUpperCase")))
 (def im_sad false)
 (unless im_sad (yell "What a great day!"))
 ; Output: "WHAT A GREAT DAY!"
 ```
 This is an interesting fact about Lisp: clever user of macros can make the language sound just like speech. There's no syntax: just a bunch of phrases that tell your program what to do. Sometimes it's too abstracted away you don't even notice you are programming: `(make me a sandwitch in 2 hours)`, one could perfectly make this work. Lisp code from a great hacker is a piece of art. But maybe you're the type that likes terse syntax and symbols? No problems...
 * Readers: `defreader`
+
 *(Readers aren't completely functional at the moment)*
 Readers are similar to macros, except they work for special forms (not parenthesis). Readers on LiScript are a little different: you just define a name and enclosing symbols. You can, then, further process it with normal macros. For example, lets define the form < a > to return the square of a:
 ```
-(defreader square < >) 
-(defmacro square (a) (mul a a)) 
+(defreader square < >)
+(defmacro square (a) (mul a a))
 (console.log <3>)
 The form above becomes (console.log (square 3)),
 which becomes (console.log (mul 3 3)),
 which becomes (console.log 9),
-which outputs 9. 
+which outputs 9.
 ```
 That is much simpler than traditional reader macros! For more advanced cases you can just edit the parser itself: it's a 25-lines-long function on the source, so it shouldn't be hard. Given how no other lisp-to-js language implement reader macros at all, it's pure win.
