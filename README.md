@@ -178,9 +178,9 @@ You must place your commands inside the correspondent parentheses body pair.
      ( (error _) )
      ( (finally 1)(finally 2) ) )
 ; try {
-;   something(1);something(2);
+;   something(1); something(2);
 ; } catch (_) {
-;   error(_)
+;   error(_);
 ; } finally {
 ;  finally(1); finally(2);
 ; }

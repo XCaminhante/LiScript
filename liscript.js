@@ -78,12 +78,12 @@ LiScript = (function () {
     // in JavaScript: var a=1, b=2, c=3
     // this isn't a valid JavaScript expression, it does not return a value to its caller
     'let': function (name,value) {
-      if (arguments.length < 2 || arguments.length%2 != 0) throw 'let: invalid number of arguments';
+      if (arguments.length < 2 || arguments.length%2 != 0) throw 'let: invalid number of arguments'
       return translations['def'].apply(null,arguments)
         .replace(/^\(/g,'{var ')
         .replace(/\)$/g,'}')
     },
-    // define global scope variables (or redefine values of already existent ones)
+    // define global scope variables (or redefine values of already existent ones) inside a closure
     // (def a 1 b 2 c 3)
     // in JavaScript: a=1, b=2, c=3
     'def': function (name,value) {
@@ -154,20 +154,6 @@ LiScript = (function () {
       ret += '}})('+tree_to_js(arguments[0])+')'
       return ret
     },
-    // calls a function (can be a deep object), passing (preferably) a array as its arguments
-    // (aply a "b" "c" [1 2 3])
-    // in JavaScript: a["b"]["c"].apply(this,[1,2,3])
-    // in JavaScript: a["b"]["c"](1,2,3) // equivalent in this case
-    'aply': function (obj,method,args) {
-      if (arguments.length < 2) throw 'call: invalid number of arguments'
-      if (arguments.length == 2) {
-        return '('+tree_to_js(arguments[0])+
-          '.apply((typeof(this)!="undefined"?this:null),'+slice.call(arguments,-1).map(tree_to_js)+'))';
-      }
-      return '('+tree_to_js(arguments[0])+
-        '['+slice.call(arguments,1,-1).map(tree_to_js).join('][')+']'+
-        '.apply(this,'+slice.call(arguments,-1).map(tree_to_js)+'))';
-    },
     // calls a function returned by a function returned by a function...
     // (chain a [1 2 3] [4 5 6])
     // in JavaScript: a(1,2,3)(4,5,6)
@@ -232,8 +218,13 @@ LiScript = (function () {
     // throws an exception
     // this isn't a valid JavaScript expression, it does not return a value to its caller
     'throw': function () {
-      if (arguments.length != 1) 'throw: invalid number of arguments'
+      if (arguments.length != 1) throw 'throw: invalid number of arguments'
       return '{throw '+tree_to_js(arguments[0])+'}'
+    },
+    // JavaScript's "instanceof" operator adapted to s-expr syntax
+    'instanceof': function () {
+      if (arguments.length != 2) throw 'instanceof: invalid number of arguments'
+      return '('+tree_to_js(arguments[0])+' instanceof '+tree_to_js(arguments[1])+')'
     },
     // permits using fluent interfaces, or dot-syntax deep objects access
     // (. "12345" (replace "1" "9") (replace "3" "7") )
@@ -263,12 +254,15 @@ LiScript = (function () {
     '-':'-',
     '*':'*',
     '/':'/',
+    '%':'%',
+
+    // You shouldn't use these with more than 2 elements
     'add':'+=',
     'sub':'-=',
     'mul':'*=',
     'div':'/=',
+    'mod':'%=',
 
-    '%':'%',
     '<':'<',
     '>':'>',
     '<=':'<=',
@@ -339,8 +333,9 @@ LiScript = (function () {
   var compile = function (text) {
     var ret = parse_tree("("+
       text
+        // Lines having a commentary mustn't contain code behind
         .replace(/^[\s]*;([^\n]*)$/mg,"")
-        .replace(/[\n\t]/g,"")
+        .replace(/[\n\t]/g," ")
     +")")
       .map(function (ast) {
         return tree_to_js(ast);
