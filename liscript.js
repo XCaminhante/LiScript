@@ -38,13 +38,12 @@ LiScript = (function () {
         tree_to_js(case_true)+':'+
         (typeof(case_false)==='undefined'?null:tree_to_js(case_false))+')';
     },
-    // coalesce terms into a string
-    // (str word1 word2 word3 word4)
-    // in JavaScript: "word1 word2 word3 word4"
-    // if you want to apply "str" over regular objects, use "call"...
+    // for internal use
+    // "Hello world"
     'str': function () {
       return '"'+slice.call(arguments).join(' ')+'"';
     },
+    // for internal use
     // {a 1 b 2}
     // in JavaScript: {a:1, b:2}
     'obj': function (name,value) {
@@ -53,6 +52,7 @@ LiScript = (function () {
         pairs.push([arguments[i-1],arguments[i]]);
       return '({'+pairs.map(function (a) {return tree_to_js(a[0])+':'+tree_to_js(a[1])}).join(',')+'})';
     },
+    // for internal use
     // [1 2 3]
     // in JavaScript: [1, 2, 3]
     'arr': function () {
@@ -83,7 +83,7 @@ LiScript = (function () {
         .replace(/^\(/g,'{var ')
         .replace(/\)$/g,'}')
     },
-    // define global scope variables (or redefine values of already existent ones)
+    // define global scope variables (or redefine values of already existent ones) inside a closure
     // (def a 1 b 2 c 3)
     // in JavaScript: a=1, b=2, c=3
     'def': function (name,value) {
@@ -152,6 +152,28 @@ LiScript = (function () {
           ';break;'
       }
       ret += '}})('+tree_to_js(arguments[0])+')'
+      return ret
+    },
+    // try multiple possibilities inside a closure
+    // returns the expression associated with the sucessful test
+    // the last body is optional, it's returned if all previous tests fail
+    // (cond (test 1) (was 1)  (test 2) (was 2)  (was 0) )
+    // in JavaScript:
+    //    if (test(1)) {was(1)}
+    //    else if (test(2)) {was(2)}
+    //    else {was(0)}
+    'cond': function () {
+      if (arguments.length < 2) throw 'cond: invalid number of arguments'
+      var ret = '(function(){if('+tree_to_js(arguments[0])+'){return '+tree_to_js(arguments[1])+'}'
+      for (var a = 2; a<(arguments.length - (arguments.length%2)); a += 2) {
+        ret += 'else if('+tree_to_js(arguments[a])+'){return '+tree_to_js(arguments[a+1])+'}'
+      }
+      if (arguments.length%2 == 1) {
+        ret += 'return '+tree_to_js(arguments[arguments.length-1])
+      } else {
+        ret += 'return null'
+      }
+      ret += '})()'
       return ret
     },
     // calls a function returned by a function returned by a function...
@@ -236,11 +258,6 @@ LiScript = (function () {
         .map(function (a) {return a.replace(/^\(|\)$/g,'')})
         .join('.')+')';
     },
-    // double negation
-    'yes': function () {
-      if (arguments.length != 1) throw 'yes: invalid number of arguments'
-      return '(!!'+tree_to_js(arguments[0])+')'
-    },
   };
   // infix operators
   var operators = {
@@ -256,7 +273,7 @@ LiScript = (function () {
     '/':'/',
     '%':'%',
 
-    // You shouldn't use these with more than 2 elements
+    // You shouldn't use these with more than 2 elements, it's a JavaScript syntax violation
     'add':'+=',
     'sub':'-=',
     'mul':'*=',
@@ -267,8 +284,15 @@ LiScript = (function () {
     '>':'>',
     '<=':'<=',
     '>=':'>=',
+
     '<<':'<<',
     '>>':'>>',
+    '>>>':'>>>',
+    '&':'&',
+    '|':'|',
+    '^':'^',
+
+    // I've realized, you can call "(~ 1)" or "(!! 1)", we don't need convenience functions for this
   };
   for (var op in operators) {(function (op) {
     translations[op] = function () {
