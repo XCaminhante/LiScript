@@ -1,5 +1,5 @@
 LiScript = (function () {
-  var slice = [].slice;
+  var slice = [].slice
   var translations = {
     // creates function objects
     // (fn (arg1 arg2 arg3) (+ arg1 arg2 arg3))
@@ -8,7 +8,7 @@ LiScript = (function () {
       if (arguments.length < 2) throw 'fun: invalid number of arguments'
       return '(function('+argList.join(',')+')'+
         '{'+slice.call(arguments,1,-1).map(tree_to_js).join(";")+
-        ';return '+slice.call(arguments,-1).map(tree_to_js).join(",")+';})';
+        ';return '+slice.call(arguments,-1).map(tree_to_js).join(",")+';})'
     },
     // creates a function with a unique default argument "_", intended for quick jobs
     // (lam (+ _ 1))
@@ -16,7 +16,7 @@ LiScript = (function () {
       if (arguments.length < 1) throw 'lam: invalid number of arguments'
       return '(function(_)'+
         '{'+slice.call(arguments,0,-1).map(tree_to_js).join(";")+
-        ';return '+slice.call(arguments,-1).map(tree_to_js).join(",")+';})';
+        ';return '+slice.call(arguments,-1).map(tree_to_js).join(",")+';})'
     },
     // finish the actual functions run, returning a value
     // (ret 1)
@@ -36,12 +36,12 @@ LiScript = (function () {
       if (arguments.length < 1) throw 'if: invalid number of arguments'
       return '('+tree_to_js(cond)+'?'+
         tree_to_js(case_true)+':'+
-        (typeof(case_false)==='undefined'?null:tree_to_js(case_false))+')';
+        (typeof(case_false)==='undefined'?null:tree_to_js(case_false))+')'
     },
     // for internal use
     // "Hello world"
     'str': function () {
-      return '"'+slice.call(arguments).join(' ')+'"';
+      return '"'+slice.call(arguments).join(' ')+'"'
     },
     // for internal use
     // {a 1 b 2}
@@ -49,14 +49,14 @@ LiScript = (function () {
     'obj': function (name,value) {
       if (arguments.length%2 != 0) throw 'obj: invalid number of arguments'
       for (var i=1, pairs=[]; i<arguments.length; i+=2)
-        pairs.push([arguments[i-1],arguments[i]]);
-      return '({'+pairs.map(function (a) {return tree_to_js(a[0])+':'+tree_to_js(a[1])}).join(',')+'})';
+        pairs.push([arguments[i-1],arguments[i]])
+      return '({'+pairs.map(function (a) {return tree_to_js(a[0])+':'+tree_to_js(a[1])}).join(',')+'})'
     },
     // for internal use
     // [1 2 3]
     // in JavaScript: [1, 2, 3]
     'arr': function () {
-      return '(['+slice.call(arguments).map(tree_to_js).join(',')+'])';
+      return '(['+slice.call(arguments).map(tree_to_js).join(',')+'])'
     },
     // permits to set a value into a deep object
     // (set a "b" "c" 3)
@@ -71,7 +71,7 @@ LiScript = (function () {
     // in JavaScript: a["b"]["c"]
     'get': function (obj,key) {
       if (arguments.length < 2) throw 'get: invalid number of arguments'
-      return '('+tree_to_js(obj)+'['+slice.call(arguments,1).map(tree_to_js).join('][')+'])';
+      return '('+tree_to_js(obj)+'['+slice.call(arguments,1).map(tree_to_js).join('][')+'])'
     },
     // define local scope variables (function scope)
     // (let a 1 b 2 c 3)
@@ -87,12 +87,12 @@ LiScript = (function () {
     // (def a 1 b 2 c 3)
     // in JavaScript: a=1, b=2, c=3
     'def': function (name,value) {
-      if (arguments.length < 2 || arguments.length%2 != 0) throw 'def: invalid number of arguments';
+      if (arguments.length < 2 || arguments.length%2 != 0) throw 'def: invalid number of arguments'
       if (arguments.length == 2) {
         return '('+tree_to_js(arguments[0])+'='+tree_to_js(arguments[1])+')'
       }
       for (var i=1, pairs=[]; i<arguments.length; i+=2)
-        pairs.push([arguments[i-1],arguments[i]]);
+        pairs.push([arguments[i-1],arguments[i]])
       return '(' + pairs.map(function (a) {return tree_to_js(a[0])+'='+tree_to_js(a[1])}).join(',')+')'
     },
     // runs a while-loop inside a closure
@@ -106,12 +106,12 @@ LiScript = (function () {
       if (arguments.length == 2) {
         return '(function(){'+
           'while('+tree_to_js(arguments[0])+')'+
-          '{'+slice.call(arguments,1).map(tree_to_js).join(';')+'}})()';
+          '{'+slice.call(arguments,1).map(tree_to_js).join(';')+'}})()'
       }
       return '(function(){'+
         tree_to_js(arguments[0])+
         ';while('+tree_to_js(arguments[1])+')'+
-        '{'+slice.call(arguments,2).map(tree_to_js).join(';')+'}})()';
+        '{'+slice.call(arguments,2).map(tree_to_js).join(';')+'}})()'
     },
     // iterates an object's members inside a closure
     // (iter [1 2 3] (def val (+ val 1)) (println val))
@@ -201,7 +201,7 @@ LiScript = (function () {
       return '(function(){'+
         slice.call(arguments,0,-1).map(tree_to_js).join(";")+
         ';return '+slice.call(arguments,-1).map(tree_to_js).join(",")+
-        '})()';
+        '})()'
     },
     // execute as many commands as desired, inside a closure, always return null
     // intended to be used where only one command is permitted (as within "if" or "while")
@@ -211,7 +211,7 @@ LiScript = (function () {
         return ''
       return '(function(){'+
         slice.call(arguments).map(tree_to_js).join(";")+
-        ';return null})()';
+        ';return null})()'
     },
     // try to run a piece of code in a closure
     // in case of exception it runs "catch" body, and always runs "finally" body
@@ -256,9 +256,16 @@ LiScript = (function () {
       return '('+tree_to_js(arguments[0])+'.'+
         slice.call(arguments,1).map(tree_to_js)
         .map(function (a) {return a.replace(/^\(|\)$/g,'')})
-        .join('.')+')';
+        .join('.')+')'
     },
-  };
+    // inverts a value signal
+    // (neg 1)
+    // in JavaScript: -(1)
+    'neg': function (val) {
+      if (arguments.length != 1) throw 'neg: invalid number of arguments'
+      return '-' + tree_to_js(arguments[0])
+    },
+  }
   // infix operators
   var operators = {
     'and':'&&',
@@ -293,12 +300,12 @@ LiScript = (function () {
     '^':'^',
 
     // I've realized, you can call "(~ 1)" or "(!! 1)", we don't need convenience functions for this
-  };
+  }
   for (var op in operators) {(function (op) {
     translations[op] = function () {
-      return '('+slice.call(arguments).map(tree_to_js).join(operators[op])+')';
+      return '('+slice.call(arguments).map(tree_to_js).join(operators[op])+')'
     };
-  })(op)};
+  })(op)}
   var macros = {
     defmacro: function (name,args,body) {
       return eval(tree_to_js(['LiScript.add_macro',['str',name],['fn',args,body]])), '"macro"';
@@ -319,7 +326,7 @@ LiScript = (function () {
     return (function parse_object(close) {
       var obj=[], symbol="", reader;
       function push_symbol() {
-        if (symbol.length>0 && symbol!=" ")
+        if (symbol.length>0)
           obj.push(symbol);
         symbol='';
       };
