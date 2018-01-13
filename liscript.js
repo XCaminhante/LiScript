@@ -281,11 +281,11 @@ LiScript = (function () {
     '%':'%',
 
     // You shouldn't use these with more than 2 elements, it's a JavaScript syntax violation
-    'add':'+=',
-    'sub':'-=',
-    'mul':'*=',
-    'div':'/=',
-    'mod':'%=',
+    '+=':'+=',
+    '-=':'-=',
+    '*=':'*=',
+    '/=':'/=',
+    '%=':'%=',
 
     '<':'<',
     '>':'>',
