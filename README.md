@@ -130,7 +130,7 @@ Note that `return` isn't a valid expression in JavaScript (i.e. you can't do `va
 The dot operator (`.`) is very useful to accessing fluent interfaces (chained named function calls) and deep properties.
 ```
 (let a "12345")
-(. a (replace "1" "9") (replace "3" "7") )
+(def a (. a (replace "1" "9") (replace "3" "7") ) )
 ; a.replace("1","9").replace("3","7")
 (console.log a)
 ; Output: "92745"
