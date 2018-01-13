@@ -175,7 +175,7 @@ You must place your commands inside the correspondent parentheses body pair.
 ```
 (try ( (something 1)(something 2) )
      ( (error _) )
-     ( (finally 1)(finally 2) ) )
+     ( (finally_do 1)(finally_do 2) ) )
 ; try {
 ;   something(1); something(2);
 ; } catch (_) {
