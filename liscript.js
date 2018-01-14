@@ -226,13 +226,18 @@ LiScript = (function () {
     'try': function (try_body,catch_body,finally_body) {
       if (arguments.length < 2 || arguments.length > 3) throw 'try: invalid number of arguments'
       ret = '(function(){try{'+
-        slice.call(arguments[0]).map(tree_to_js).join(';')+
-        '}catch(_){'+
-        slice.call(arguments[1]).map(tree_to_js).join(';')
+        slice.call(arguments[0],0,-1).map(tree_to_js).join(';')+
+        ';return '+slice.call(arguments[0],-1).map(tree_to_js)+
+        '}catch(_){'
       if (arguments.length == 3) {
-        ret += '}finally{'+
+        ret +=
+          slice.call(arguments[1]).map(tree_to_js).join(';')+
+          '}finally{'+
           slice.call(arguments[2],0,-1).map(tree_to_js).join(';')+
           ';return '+slice.call(arguments[2],-1).map(tree_to_js)
+      } else {
+        ret += slice.call(arguments[1],0,-1).map(tree_to_js).join(';')+
+          ';return '+slice.call(arguments[1],-1).map(tree_to_js)
       }
       ret += '}})()'
       return ret
@@ -242,6 +247,10 @@ LiScript = (function () {
     'throw': function () {
       if (arguments.length != 1) throw 'throw: invalid number of arguments'
       return '{throw '+tree_to_js(arguments[0])+'}'
+    },
+    // discards its operands, do nothing
+    'nop': function () {
+      return ''
     },
     // JavaScript's "instanceof" operator adapted to s-expr syntax
     'instanceof': function () {
