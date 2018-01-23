@@ -20,16 +20,16 @@ LiScript is a tiny layer on top of JavaScript. It has some basic forms, which ma
 * Array: `["this" "is" "an" "array"]`
 * Object: `{foo 5 "bar" 7}`
 * Regular Expression: `/[^a]$/g`
-* Function~~/macro~~ calling: `(func 1 2 3)`
+* Function calling: `(func 1 2 3)`
 
-In Lisp everything is a expression, i.e., every command can be replaced by the value it returns.
+In Lisp everything is a expression, i.e., every command can be replaced by the value it returns (if you ignore the side effects, of course).
 Unfortunately, not all LiScript's words can return values because there are constructs in JavaScript that are statements, they can't be used in place of expressions.
 Actually, these words are `let ret ifret throw error type_error block`.
 You still can use these in places that accept statements, or create a closure when necessary.
 
 Commentaries:
 ```
-; This is a single-line commentary
+; This is a single-line comment
 (code) ; You can place your comments anywhere
 ; Just remember that everything between the semicolon and the end of the line will be ignored by the compiler
 ```
