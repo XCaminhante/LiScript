@@ -97,7 +97,7 @@ It expects a value, and test-evaluate expression pairs. If one expression remais
         (console.log "Default") )
 ; Output: "One"
 ```
-* Function and closure words: `fun lam ret do block`
+* Function and closure words: `fun lam ret ifret do block`
 ```
 (fun (a b) (+ a b))
 ; function (a,b) { return a+b; };
@@ -107,12 +107,14 @@ It expects a value, and test-evaluate expression pairs. If one expression remais
 (lam (+ _ 1))
 ; function (_) { return _+1; };
 ```
-`ret` exits the function prematurely.
+`ret` exits the function prematurely. `ifret` only exits the function if a condition holds.
 
 Note that `return` isn't a valid expression in JavaScript (i.e. you can't do `var a = return 1;`)
 ```
 (fun (a b) (ret 4) (+ a b))
 ; function (a, b) { return 4; return a+b; };
+(fun (a b) (ifret (> a 3) 4) (+ a b))
+; function (a, b) { if (a>3) return 4; return a+b; };
 ```
 `do` stacks expressions with commas:
 ```
