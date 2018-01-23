@@ -175,11 +175,11 @@ Liscript_parser = function (reader) {
         tmp.unshift('_obj')
         return tmp
       case close_list:
-        error('evenenthesis even open')
+        error('Parenthesis pair open')
       case close_array:
-        error('Square brackets even open')
+        error('Square brackets pair open')
       case close_object:
-        error('Curly brackets even open')
+        error('Curly brackets pair open')
       case null:
         return null
       }
