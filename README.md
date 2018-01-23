@@ -57,7 +57,7 @@ Builtin functions:
 (let a 1) (+= a 1)
 ```
 * Bitwise operators: `<< >> >>>`
-* Global (multiple) assignment: `def`
+* Generic (multiple) assignment: `def`
 ```
 (def abc 1 def 2 ghi 3)
 ; abc=1, def=2, ghi=3
