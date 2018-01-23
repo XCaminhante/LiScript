@@ -52,7 +52,7 @@ Builtin functions:
 ```
 `same` is the equivalent of `===` in JavaScript, `=` is the equivalent of `==`.
 
-* Modifying atribution operators: `+= -= *= /= %=`
+* Modifying attribution operators: `+= -= *= /= %=`
 ```
 (let a 1) (+= a 1)
 ```
@@ -70,7 +70,7 @@ I strongly recommend to always use `let`, except if you really want to create gl
 (let abc 1 def 2 ghi 3)
 ; var abc=1, def=2, ghi=3
 ```
-* Conditional: `if cond switch`
+* Conditionals: `if cond switch`
 ```
 (let rnd (Math.random))
 (if (< rnd 0.5)
@@ -97,7 +97,7 @@ It expects a value, and test-evaluate expression pairs. If one expression remais
         (console.log "Default") )
 ; Output: "One"
 ```
-* Function and closure words: `fun lam ret ifret do block`
+* Functions and closures: `fun lam ret ifret do block`
 ```
 (fun (a b) (+ a b))
 ; function (a,b) { return a+b; };
