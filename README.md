@@ -202,9 +202,15 @@ Note that `throw` isn't a valid JavaScript expression, it's a statement (it does
 ```
 `error` throws a `Error()` exception, passing the arguments forward. `type_error` throws a `TypeError()` exception.
 
-* Conveniences: `nop args`
+* Conveniences: `nop args __COLUMN __LINE`
 
 `nop` doesn't emit JavaScript code, and ignores its arguments. It's the LiScript no-op.
+
+Whenever the pseudo-variables `__LINE` and `__COLUMN` appear, they're replaced by the actual line or column in the LiScript source-code.
+```
+(console.log __COLUMN)(console.log __LINE)
+; Output: 14 1
+```
 
 `args` accesses the `arguments` array-like object. It only allows reading:
 ```
@@ -213,5 +219,6 @@ Note that `throw` isn't a valid JavaScript expression, it's a statement (it does
 ```
 
 ~~* Macro: `defmacro`~~
+
 ~~* Readers: `defreader`~~
 *(Readers and macros aren't functional at the moment...)*
