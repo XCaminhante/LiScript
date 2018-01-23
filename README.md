@@ -97,7 +97,7 @@ It expects a value, and test-evaluate expression pairs. If one expression remais
         (console.log "Default") )
 ; Output: "One"
 ```
-* Function and closure facilities: `fun lam ret do block`
+* Function and closure words: `fun lam ret do block`
 ```
 (fun (a b) (+ a b))
 ; function (a,b) { return a+b; };
