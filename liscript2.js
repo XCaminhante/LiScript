@@ -137,7 +137,7 @@ Liscript_parser = function (reader) {
   }
 
   function read_text () {
-    return ['_str', read_delimited(double_quotes,double_quotes)]
+    return ['_str', read_delimited(double_quotes,double_quotes,1)]
   }
   function read_regexp () {
     skip('#')
@@ -485,4 +485,14 @@ Liscript_compiler = function (reader) {
   }
   this.builtins = builtins
   this.compile_all = compile_all
+  this.compile_token = compile_token
+  this.verify_args = verify_args
+  this.error = error
+  this.is_symbol = is_symbol
+  this.is_string = is_string
+  this.is_number = is_number
+  this.is_list = is_list
+  this.is_array = is_array
+  this.is_object = is_object
+  this.is_arguments_list = is_arguments_list
 }
