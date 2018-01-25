@@ -25,29 +25,40 @@ Reader_plain_text.prototype = {
     if (this.text) this.pos = this.text.length
     return null
   },
+  reset: function () {
+    this.column = 1
+    this.line = 1
+    this.pos = 0
+  },
   toString: function () {
-    return '<text ' + this.text.length + ' chars>'
+    return '<Text ' + this.text.length + ' chars>'
   },
 }
 
 Liscript_parser = function (reader) {
-  this.reader = reader
-    var spaces = ' \n\t\x0C\u2028\u2029\xA0'
-      escape_bar = '\\',
-      regexp_bar = '/', modes_regex = 'ymgi',
-      commentary_start = ';',
-      double_quotes = '"',
-      open_list = '(', close_list = ')',
-      open_array = '[', close_array = ']',
-      open_object = '{', close_object = '}',
-      end_symbol = spaces
-        .concat(regexp_bar) .concat(commentary_start) .concat(double_quotes) .concat(open_list)
-        .concat(close_list) .concat(open_array) .concat(close_array) .concat(open_object) .concat(close_object)
+  var spaces = ' \n\t\x0C\u2028\u2029\xA0'
+    escape_bar = '\\',
+    start_regexp = '#',
+    regexp_bar = '/', modes_regex = 'ymgi',
+    commentary_start = ';',
+    double_quotes = '"',
+    open_list = '(', close_list = ')',
+    open_array = '[', close_array = ']',
+    open_object = '{', close_object = '}',
+    end_symbol = spaces
+      .concat(start_regexp) .concat(commentary_start) .concat(double_quotes) .concat(open_list)
+      .concat(close_list) .concat(open_array) .concat(close_array) .concat(open_object) .concat(close_object)
+  this.def_reader = function (new_reader) {
+    reader = new_reader
+  }
   function peek () {
-    return this.reader.peek()
+    return reader.peek()
   }
   function next () {
-    return this.reader.next()
+    return reader.next()
+  }
+  function reset () {
+    reader.reset()
   }
   function error (msg) {
     throw new Error('At ' + reader.toString() +
@@ -129,6 +140,7 @@ Liscript_parser = function (reader) {
     return ['_str', read_delimited(double_quotes,double_quotes)]
   }
   function read_regexp () {
+    skip('#')
     var body = read_delimited(regexp_bar,regexp_bar)
     var modes = read_while(function (ch) {
       return contained_in(ch, modes_regex)
@@ -162,7 +174,7 @@ Liscript_parser = function (reader) {
         continue ext
       case double_quotes:
         return read_text()
-      case regexp_bar:
+      case start_regexp:
         return read_regexp()
       case open_list:
         return read_nested(open_list, close_list)
@@ -189,12 +201,14 @@ Liscript_parser = function (reader) {
   this.read_token = read_token
   this.read_atom = read_atom
   this.error = error
+  this.reset = reset
 }
 
 
 
 Liscript_compiler = function (reader) {
-  var parser = new Liscript_parser(reader)
+  var parser =  new Liscript_parser(reader)
+  this.parser = parser
   function error (msg) {
     parser.error(msg)
   }
@@ -295,7 +309,7 @@ Liscript_compiler = function (reader) {
       verify_args('if',args,2,3)
       return '(' + compile_token(args[0]) +
         '?' + compile_token(args[1]) +
-        (args[2]? ':' + compile_token(args[2]) :'') + ')'
+        ':' + (args[2]? compile_token(args[2]): 'null') + ')'
     },
     'cond': function (args) {
       verify_args('cond',args,2,0)
@@ -304,8 +318,9 @@ Liscript_compiler = function (reader) {
         ret += (a>0?'else if(':'if(') + compile_token(args[a]) + '){' + compile_token(args[a+1]) + '}'
       }
       if (args.length % 2 != 0) {
-        ret += 'else{' + compile_token(args[args.length-1]) + '}})()'
+        ret += 'else{' + compile_token(args[args.length-1]) + '}'
       }
+      ret += '})()'
       return ret
     },
     'switch': function (args) {
@@ -463,10 +478,11 @@ Liscript_compiler = function (reader) {
   }
   function compile_all () {
     var out = '', token
-    while( (token = parser.read_token()) ) {
-      out += compile_token(token)
+    while( (token = this.parser.read_token()) ) {
+      out += compile_token(token) + ';'
     }
     return out
   }
+  this.builtins = builtins
   this.compile_all = compile_all
 }
