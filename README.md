@@ -19,7 +19,8 @@ LiScript is a tiny layer on top of JavaScript. It has some basic forms, which ma
 * String: `"this is a string"`
 * Array: `["this" "is" "an" "array"]`
 * Object: `{foo 5 "bar" 7}`
-* Regular Expression: `/[^a]$/g`
+* Regular Expression: `#/[^a]$/g` 
+(yes, a hash symbol followed by the regexp as you knows it)
 * Function calling: `(func 1 2 3)`
 
 In Lisp everything is a expression, i.e., every command can be replaced by the value it returns (if you ignore the side effects, of course).
