@@ -309,7 +309,7 @@ Liscript_compiler = function (reader) {
       verify_args('if',args,2,3)
       return '(' + compile_token(args[0]) +
         '?' + compile_token(args[1]) +
-        ':' + (args[2]? compile_token(args[2]): 'null') + ')'
+        ':' + (args.length==3? compile_token(args[2]): 'null') + ')'
     },
     'cond': function (args) {
       verify_args('cond',args,2,0)
