@@ -422,6 +422,10 @@ Liscript_compiler = function (reader) {
       verify_args('neg',args,1,1)
       return '(-' + compile_token(args[0]) + ')'
     },
+    '!': function (args) {
+      verify_args('!',args,1,1)
+      return '(!' + compile_token(args[0]) + ')'
+    },
   }
   var infix_operators = {
     'and':'&&',
@@ -481,7 +485,7 @@ Liscript_compiler = function (reader) {
     while( (token = this.parser.read_token()) ) {
       out += compile_token(token) + ';'
     }
-    return out
+    return out + '\n'
   }
   this.builtins = builtins
   this.compile_all = compile_all
