@@ -507,7 +507,7 @@ Liscript_compiler = function (reader) {
       .replace(/{;/g,'{')
       .replace(/return \(/g,'return(')
       .replace(/;}/g,'}')
-      .replace(/! (/g,'!(')
+      .replace(/! \(/g,'!(')
     return out + '\n'
   }
   this.builtins = builtins
