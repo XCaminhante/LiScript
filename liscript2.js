@@ -233,6 +233,9 @@ Liscript_compiler = function (reader) {
   function is_list (obj) { return (obj instanceof Array) }
   function is_array (obj) { return (obj instanceof Array) && obj[0] === '_arr' }
   function is_object (obj) { return (obj instanceof Array) && obj[0] === '_obj' }
+  function is_functional (obj) { return (obj instanceof Array) && (obj[0] === 'lam' || obj[0] === 'fun') }
+  function is_lambda (obj) { return (obj instanceof Array) && obj[0] === 'lam' }
+  function is_function (obj) { return (obj instanceof Array) && obj[0] === 'fun' }
   function is_arguments_list (list) {
     return (list instanceof Array) &&
       list.every(function (val, idx) {
@@ -250,8 +253,8 @@ Liscript_compiler = function (reader) {
       verify_args('_obj',args,0,0,1)
       var ret = '{'
       for (var a = 0; a < args.length; a += 2) {
-        if (!is_symbol(args[a]) && !is_string(args[a]))
-          error('_obj: key must be a symbol or string')
+        if (!is_symbol(args[a]) && !is_string(args[a]) && !is_number(args[a]))
+          error('_obj: key must be a symbol, string or a number')
         ret += compile_token(args[a]) + ':' + compile_token(args[a+1]) + ','
       }
       ret += '}'
@@ -261,9 +264,10 @@ Liscript_compiler = function (reader) {
       verify_args('fun',args,2,0)
       if (!is_arguments_list(args[0]))
         error('fun: invalid arguments list')
+      var ret = compile_token(args[args.length-1])
       return '(function(' + args[0].map(compile_token).join(',') + ')' +
         '{' + args.slice(1,-1).map(compile_token).join(';') +
-        ';return ' + compile_token(args[args.length-1]) + '})'
+        (ret.length>0?';return ' + ret:'') + '})'
     },
     'lam': function (args) {
       verify_args('lam',args,1,0)
@@ -360,13 +364,17 @@ Liscript_compiler = function (reader) {
       verify_args('throw',args,1,1)
       return '{throw ' + compile_token(args[0]) + '}'
     },
-    'error': function (args) {
+    'Error': function (args) {
       verify_args('error',args,1,3)
-      return '{throw error(' + args.map(compile_token).join(',') + ')}'
+      return '{throw Error(' + args.map(compile_token).join(',') + ')}'
     },
-    'type_error': function (args) {
+    'TypeError': function (args) {
       verify_args('type_error',args,1,3)
       return '{throw TypeError(' + args.map(compile_token).join(',') + ')}'
+    },
+    'assert': function (args) {
+      verify_args('assert',args,2,2)
+      return '{if(!(' + compile_token(args[0]) + '))throw ' + compile_token(args[1]) + '}'
     },
     'new': function (args) {
       verify_args('new',args,1,0)
@@ -384,6 +392,16 @@ Liscript_compiler = function (reader) {
           return item.map(compile_token).join(',')
         }).join(')(')
       ret += '))'
+      return ret
+    },
+    'fapply': function (args) {
+      verify_args('fapply',args,2,0)
+      var ret = '(' + compile_token(args[0]) + ')'
+      args.slice(1).map(function(item){
+        if (!is_symbol(item) && !is_functional(item))
+          error('fapply: all arguments after first must be symbols or function objects')
+        ret = '(' + compile_token(item) + ret + ')'
+      })
       return ret
     },
     '.': function (args) {
@@ -473,7 +491,7 @@ Liscript_compiler = function (reader) {
   }
   function compile_token (token) {
     if ((token instanceof Array) && token.length > 0) {
-      if (builtins[token[0]]) {
+      if (builtins[token[0]] && builtins.hasOwnProperty(token[0])) {
         return builtins[token[0]]( token.slice(1) )
       }
       return function_call(token)
@@ -485,6 +503,10 @@ Liscript_compiler = function (reader) {
     while( (token = this.parser.read_token()) ) {
       out += compile_token(token) + ';'
     }
+    out = out
+      .replace(/{;/g,'{')
+      .replace(/return \(/g,'return(')
+      .replace(/;}/g,'}')
     return out + '\n'
   }
   this.builtins = builtins
