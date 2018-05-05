@@ -442,7 +442,7 @@ Liscript_compiler = function (reader) {
     },
     '!': function (args) {
       verify_args('!',args,1,1)
-      return '(!' + compile_token(args[0]) + ')'
+      return '(! ' + compile_token(args[0]) + ')'
     },
   }
   var infix_operators = {
@@ -507,6 +507,7 @@ Liscript_compiler = function (reader) {
       .replace(/{;/g,'{')
       .replace(/return \(/g,'return(')
       .replace(/;}/g,'}')
+      .replace(/! (/g,'!(')
     return out + '\n'
   }
   this.builtins = builtins
