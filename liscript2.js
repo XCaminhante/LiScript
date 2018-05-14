@@ -457,7 +457,13 @@ Liscript_compiler = function (reader) {
         '")'
       macros[args[0]] = eval(func)
       return ''
-    }
+    },
+    'quote': function (args) {
+      return '"' + escape_double_quotes(
+        args.map(compile_token).join(',')
+          .replace(/\\/g,'\\\\\\')
+        ) + '"'
+    },
   }
   var infix_operators = {
     'and':'&&',
@@ -507,7 +513,7 @@ Liscript_compiler = function (reader) {
         function (item) {return eval(compile_token(item))}
       ))
     }
-    return '(' + token[0] + '(' + token.slice(1).map(compile_token).join(',') + '))'
+    return '(' + compile_token(token[0]) + '(' + token.slice(1).map(compile_token).join(',') + '))'
   }
   function compile_token (token) {
     if ((token instanceof Array) && token.length > 0) {
