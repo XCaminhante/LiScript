@@ -444,6 +444,20 @@ Liscript_compiler = function (reader) {
       verify_args('!',args,1,1)
       return '(! ' + compile_token(args[0]) + ')'
     },
+    'macro': function (args) {
+      verify_args('macro',args,2,0)
+      if (!is_symbol(args[0]))
+        error('macro: first argument must be a symbol')
+      if (!is_arguments_list(args[1]))
+        error('macro: second argument must be a list')
+      var ret = compile_token(args[args.length-1])
+      var func = 'new Function("' + args[1].join('","') + '","' +
+        escape_double_quotes(args.slice(2,-1).map(compile_token).join(';')) +
+        escape_double_quotes(';return ' + ret) +
+        '")'
+      macros[args[0]] = eval(func)
+      return ''
+    }
   }
   var infix_operators = {
     'and':'&&',
@@ -478,6 +492,7 @@ Liscript_compiler = function (reader) {
 
     'do':',',
   }
+  var macros = {}
   for (var oper in infix_operators) {(function(op){
     builtins[op] = function (args) {
       verify_args(op,args,2,0)
@@ -487,7 +502,12 @@ Liscript_compiler = function (reader) {
   function function_call (token) {
     if (is_number(token[0]) || is_string(token[0]) || is_array(token[0]) || is_object(token[0]))
       error('<function_call>: invalid token')
-    return '(' + compile_token(token[0]) + '(' + token.slice(1).map(compile_token).join(',') + '))'
+    if (macros[token[0]]) {
+      return macros[token[0]].apply(this, token.slice(1).map(
+        function (item) {return eval(compile_token(item))}
+      ))
+    }
+    return '(' + token[0] + '(' + token.slice(1).map(compile_token).join(',') + '))'
   }
   function compile_token (token) {
     if ((token instanceof Array) && token.length > 0) {
