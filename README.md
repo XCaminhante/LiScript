@@ -1,5 +1,5 @@
 # LiScript
-LiScript replaces JavaScript's syntax by lisp's powerful S-expressions ~~and macro system~~.
+LiScript replaces JavaScript's syntax by lisp's powerful S-expressions and macro system.
 
 #### Using the compiler
 I've implemented a reader interface system, that permits the compiler to operate uniformly over any type of input.
@@ -219,8 +219,18 @@ Whenever the pseudo-variables `__LINE` and `__COLUMN` appear, they're replaced b
 ; (arguments.length>1 ? arguments[1] : undefined)
 ```
 
-~~* Macro: `defmacro`~~
+* Macros: `macro`
+
+Macros are metafunctions that permit you to extend the compiler.
+They use the same LiScript syntax, but they run at compile time. The compiler outputs their returns in the place the macros are invoked.
+```
+(macro prn (in)
+  ; I run code at compile time
+  (+ "alert('Hello " t "')") )
+; this emits "alert('Hello 1')" in the compiler output
+(prn (+ "" 1)) 
+```
 
 ~~* Readers: `defreader`~~
 
-*(Readers and macros aren't functional at the moment...)*
+*(Readers aren't functional at the moment...)*
