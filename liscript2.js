@@ -445,7 +445,7 @@ Liscript_compiler = function (reader) {
       return '(! ' + compile_token(args[0]) + ')'
     },
     'macro': function (args) {
-      verify_args('macro',args,2,0)
+      verify_args('macro',args,3,0)
       if (!is_symbol(args[0]))
         error('macro: first argument must be a symbol')
       if (!is_arguments_list(args[1]))
