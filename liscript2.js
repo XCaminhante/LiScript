@@ -365,11 +365,11 @@ Liscript_compiler = function (reader) {
       return '{throw ' + compile_token(args[0]) + '}'
     },
     'Error': function (args) {
-      verify_args('error',args,1,3)
+      verify_args('Error',args,1,3)
       return '{throw Error(' + args.map(compile_token).join(',') + ')}'
     },
     'TypeError': function (args) {
-      verify_args('type_error',args,1,3)
+      verify_args('TypeError',args,1,3)
       return '{throw TypeError(' + args.map(compile_token).join(',') + ')}'
     },
     'assert': function (args) {
