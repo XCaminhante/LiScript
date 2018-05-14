@@ -226,7 +226,7 @@ They use the same LiScript syntax, but they run at compile time. The compiler ou
 ```
 (macro prn (in)
   ; I run code at compile time
-  (+ "alert('Hello " t "')") )
+  (+ "alert('Hello " in "')") )
 ; this emits "alert('Hello 1')" in the compiler output
 (prn (+ "" 1)) 
 ```
