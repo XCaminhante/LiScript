@@ -3,7 +3,7 @@ LiScript substitui a sintaxe JS com as poderosas expressões S(imbólicas) e as 
 A linguagem ainda está instável, tenha paciência.
 
 ### Usando o compilador
-LiScript possui uma interface de console em node.js.
+LiScript possui uma interface de console em Node.JS.
 Experimente compilar os exemplos que acompanham o compilador, depois os executar:
 ```
 node compilar_liscript.js t.lisp t2.lisp
