@@ -38,7 +38,7 @@ Reader_plain_text.prototype = {
 Liscript_parser = function (reader) {
   var spaces = ' \n\t\x0C\u2028\u2029\xA0'
     escape_bar = '\\',
-    start_regexp = '/',
+    regexp_start = '/',
     regexp_bar = '/', regexp_modes = 'ymgiu',
     commentary_start = ';',
     simple_quotes = "'",
@@ -47,7 +47,7 @@ Liscript_parser = function (reader) {
     open_array = '[', close_array = ']',
     open_object = '{', close_object = '}',
     end_symbol = spaces
-      .concat(start_regexp) .concat(commentary_start) .concat(double_quotes) .concat(open_list)
+      .concat(regexp_start) .concat(commentary_start) .concat(double_quotes) .concat(open_list)
       .concat(close_list) .concat(open_array) .concat(close_array) .concat(open_object) .concat(close_object)
   this.def_reader = function (new_reader) {
     reader = new_reader
@@ -175,7 +175,7 @@ Liscript_parser = function (reader) {
       case double_quotes:
       case simple_quotes:
         return read_text(peek())
-      case start_regexp:
+      case regexp_start:
         return read_regexp()
       case open_list:
         return read_nested(open_list, close_list)
