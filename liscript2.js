@@ -38,9 +38,10 @@ Reader_plain_text.prototype = {
 Liscript_parser = function (reader) {
   var spaces = ' \n\t\x0C\u2028\u2029\xA0'
     escape_bar = '\\',
-    start_regexp = '#',
-    regexp_bar = '/', modes_regex = 'ymgi',
+    start_regexp = '/',
+    regexp_bar = '/', modes_regex = 'ymgiu',
     commentary_start = ';',
+    simple_quotes = "'",
     double_quotes = '"',
     open_list = '(', close_list = ')',
     open_array = '[', close_array = ']',
@@ -136,12 +137,11 @@ Liscript_parser = function (reader) {
     return tokens
   }
 
-  function read_text () {
-    return ['_str', read_delimited(double_quotes,double_quotes,1)]
+  function read_text (quotes) {
+    return ['_str', read_delimited(quotes,quotes,1)]
   }
   function read_regexp () {
-    skip('#')
-    var body = read_delimited(regexp_bar,regexp_bar)
+    var body = read_delimited(regexp_bar,regexp_bar,1)
     var modes = read_while(function (ch) {
       return contained_in(ch, modes_regex)
     })
@@ -173,7 +173,8 @@ Liscript_parser = function (reader) {
         skip_commentary()
         continue ext
       case double_quotes:
-        return read_text()
+      case simple_quotes:
+        return read_text(peek())
       case start_regexp:
         return read_regexp()
       case open_list:
@@ -207,18 +208,20 @@ Liscript_parser = function (reader) {
 
 
 Liscript_compiler = function (reader) {
-  var parser =  new Liscript_parser(reader)
+  var parser = new Liscript_parser(reader)
   this.parser = parser
   function error (msg) {
     parser.error(msg)
   }
   function verify_args (name, args, minimum, maximum, even) {
-    if (minimum && maximum && minimum == maximum && args.length != minimum)
+    if (minimum && maximum && minimum == maximum && args.length != minimum) {
       error(name + ': required exactly ' + minimum + ' argument(s)')
+    } else {
     if (minimum && args.length < minimum)
       error(name + ': insufficient arguments')
     if (maximum && args.length > maximum)
       error(name + ': excessive arguments')
+    }
     if (even && args.length % 2 != 0)
       error(name + ': arguments number must be even')
   }
@@ -233,15 +236,14 @@ Liscript_compiler = function (reader) {
   function is_list (obj) { return (obj instanceof Array) }
   function is_array (obj) { return (obj instanceof Array) && obj[0] === '_arr' }
   function is_object (obj) { return (obj instanceof Array) && obj[0] === '_obj' }
-  function is_functional (obj) { return (obj instanceof Array) && (obj[0] === 'lam' || obj[0] === 'fun') }
-  function is_lambda (obj) { return (obj instanceof Array) && obj[0] === 'lam' }
-  function is_function (obj) { return (obj instanceof Array) && obj[0] === 'fun' }
+  function is_functional (obj) { return (obj instanceof Array) && ( functionals.indexOf(obj[0]) != -1 ) }
   function is_arguments_list (list) {
     return (list instanceof Array) &&
       list.every(function (val, idx) {
         return is_symbol(val)
       })
   }
+  var functionals = ['function','lambda','closure']
   var builtins = {
     '_str': function (args) {
       return '"' + args.map(escape_double_quotes).join(' ') + '"'
@@ -260,157 +262,183 @@ Liscript_compiler = function (reader) {
       ret += '}'
       return ret.replace(/,\}$/g,'}')
     },
-    'fun': function (args) {
+    'function': function (args) {
       verify_args('fun',args,2,0)
       if (!is_arguments_list(args[0]))
         error('fun: invalid arguments list')
       var ret = compile_token(args[args.length-1])
-      return '(function(' + args[0].map(compile_token).join(',') + ')' +
-        '{' + args.slice(1,-1).map(compile_token).join(';') +
-        (ret.length>0?';return ' + ret:'') + '})'
+      return '(function(' + args[0].map(compile_token).join(',') + '){' +
+        args.slice(1,-1).map(compile_token).join(';') +
+        (ret.length>0? ';return ' + ret :'') + '})'
     },
-    'lam': function (args) {
+    'lambda': function (args) {
       verify_args('lam',args,1,0)
+      var ret = compile_token(args[args.length-1])
       return '(function(_){' +
         args.slice(0,-1).map(compile_token).join(';') +
-        ';return ' + compile_token(args[args.length-1]) + '})'
+        (ret.length>0? ';return ' + ret :'') + '})'
     },
-    'ret': function (args) {
+    'closure': function (args) {
+      verify_args('closure',args,2,0)
+      if (!is_list(args[0]))
+        error('closure: invalid arguments list')
+      if (args[0].length%2 != 0)
+        error('closure: arguments list items number must be even')
+      return '(function(' +
+        args[0].filter(function(val,idx){
+          return (idx%2 == 0 &&
+            ( is_symbol(val) || error('closure: invalid argument name') ))
+        }).join(',') + '){' +
+        args.slice(1).map(compile_token).join(';') +
+        '})(' + args[0].filter(function(val,idx){
+          return (idx%2 == 1)
+        }).map(compile_token).join(',') + ')'
+    },
+    'return': function (args) {
       verify_args('ret',args,1,1)
-      return '{return ' + compile_token(args[0]) + '}'
-    },
-    'ifret': function (args) {
-      verify_args('ret',args,2,2)
-      return '{if(' + compile_token(args[0]) + ')return ' + compile_token(args[1]) + '}'
+      return 'return ' + compile_token(args[0])
     },
     'set': function (args) {
       verify_args('set',args,3,0)
-      return '(' + compile_token(args[0]) + '[' +
-        args.slice(1,-1).map(compile_token).join('][') + ']=' +
-        compile_token(args[args.length-1]) + ')'
+      args = args.map(compile_token)
+      return '(' + args[0] + '[' +
+        args.slice(1,-1).join('][') + ']=' +
+        args[args.length-1] + ')'
+    },
+    ':=': function (args) {
+      return this['set'](args)
     },
     'get': function (args) {
       verify_args('get',args,2,0)
-      return '(' + compile_token(args[0]) +
-      '[' + args.slice(1).map(compile_token).join('][') + '])'
+      args = args.map(compile_token)
+      return '(' + args[0] +
+      '[' + args.slice(1).join('][') + '])'
+    },
+    ':': function (args) {
+      return this['get'](args)
     },
     'def': function (args) {
       verify_args('def',args,2,0,1)
-      var ret = '('
-      for (var a = 0; a < args.length; a += 2) {
-        ret += compile_token(args[a]) + '=' + compile_token(args[a+1]) + ','
-      }
-      ret = ret.slice(0,-1) + ')'
-      return ret
-    },
-    'let': function (args) {
-      verify_args('let',args,2,0,1)
-      return builtins['def'](args)
-        .replace(/^\(/g,'{var ')
-        .replace(/\)$/g,'}')
-    },
-    'if': function (args) {
-      verify_args('if',args,2,3)
-      return '(' + compile_token(args[0]) +
-        '?' + compile_token(args[1]) +
-        ':' + (args.length==3? compile_token(args[2]): 'null') + ')'
-    },
-    'cond': function (args) {
-      verify_args('cond',args,2,0)
-      var ret = '(function(){'
-      for (var a = 0; a < args.length-1; a+=2) {
-        ret += (a>0?'else if(':'if(') + compile_token(args[a]) + '){' + compile_token(args[a+1]) + '}'
-      }
-      if (args.length % 2 != 0) {
-        ret += 'else{' + compile_token(args[args.length-1]) + '}'
-      }
-      ret += '})()'
-      return ret
-    },
-    'switch': function (args) {
-      verify_args('switch',args,3,0)
-      var ret = '(function(_){switch(_){'
-      for (var a = 1; a < args.length-1; a+=2) {
-        ret += 'case ' + compile_token(args[a]) + ':' +
-          compile_token(args[a+1]) + ';break;'
-      }
-      if (args.length % 2 == 0) {
-        ret += 'default:' + compile_token(args[args.length-1])
-      }
-      ret += '}})(' + compile_token(args[0]) + ')'
-      return ret
-    },
-    'while': function (args) {
-      verify_args('while',args,3,4)
-      return '(function(){' + compile_token(args[0]) +
-        ';while(' + compile_token(args[1]) + '){' +
-        compile_token(args[2]) + '}' +
-        (args.length==4? compile_token(args[3]) :'') + '})()'
-    },
-    'iter': function (args) {
-      verify_args('iter',args,2,3)
-      return '(function(obj_){for(var key in obj_){var val=obj_[key];' + compile_token(args[1]) +
-        '}' + (args.length==3? 'return ' + compile_token(args[2]) :'') +
-        '})(' + compile_token(args[0]) + ')'
-    },
-    'try': function (args) {
-      verify_args('try',args,2,3)
-      return '(function(){try{' +
-        compile_token(args[0]) +
-        '}catch(_){' + compile_token(args[1]) + '}' +
-        (args.length==3?'finally{' + compile_token(args[2]) + '}':'') + '})()'
-    },
-    'throw': function (args) {
-      verify_args('throw',args,1,1)
-      return '{throw ' + compile_token(args[0]) + '}'
-    },
-    'Error': function (args) {
-      verify_args('Error',args,1,3)
-      return '{throw Error(' + args.map(compile_token).join(',') + ')}'
-    },
-    'TypeError': function (args) {
-      verify_args('TypeError',args,1,3)
-      return '{throw TypeError(' + args.map(compile_token).join(',') + ')}'
-    },
-    'assert': function (args) {
-      verify_args('assert',args,2,2)
-      return '{if(!(' + compile_token(args[0]) + '))throw ' + compile_token(args[1]) + '}'
-    },
-    'new': function (args) {
-      verify_args('new',args,1,0)
-      if (!is_symbol(args[0]))
-        error('new: first argument must be a symbol')
-      return '(new ' + args[0] +
-        '(' + args.slice(1).map(compile_token).join(',') + '))'
-    },
-    'chain': function (args) {
-      verify_args('chain',args,2,0)
-      var ret = '(' + compile_token(args[0]) + '(' +
-        args.slice(1).map(function(item) {
-          if (!is_list(item))
-            error('chain: all arguments after first must be lists')
-          return item.map(compile_token).join(',')
-        }).join(')(')
-      ret += '))'
-      return ret
-    },
-    'fapply': function (args) {
-      verify_args('fapply',args,2,0)
-      var ret = '(' + compile_token(args[0]) + ')'
-      args.slice(1).map(function(item){
-        if (!is_symbol(item) && !is_functional(item))
-          error('fapply: all arguments after first must be symbols or function objects')
-        ret = '(' + compile_token(item) + ret + ')'
-      })
-      return ret
+      args = args.map(compile_token)
+      return '(' + args.map(function(val,idx){
+        return val + (idx%2? ',' :'=')
+      }).join('').slice(0,-1) + ')'
     },
     '.': function (args) {
       verify_args('.',args,2,0)
       return '(' + compile_token(args[0]) + '.' +
         args.slice(1)
         .map(compile_token)
-        .map(function (a) {return a.replace(/^\(|\)$/g,'')})
+        .map(function(a){return a.replace(/^\(|\)$/g,'')})
         .join('.') + ')'
+    },
+    'let': function (args) {
+      verify_args('let',args,2,0,1)
+      args = args.map(compile_token)
+      return '{' + args.map(function(val,idx){
+        return val + (idx%2? ';' :'=')
+      }).join('').slice(0,-1) + '}'
+    },
+    'if': function (args) {
+      verify_args('if',args,2,3)
+      args = args.map(compile_token)
+      return '(' + args[0] +
+        '?' + args[1] +
+        ':' + (args.length==3? args[2]: 'null') + ')'
+    },
+    'cond': function (args) {
+      verify_args('cond',args,2,0)
+      return args.map(compile_token).map(function(val,idx){
+        if (idx%2==0) {
+          if (idx==args.length-1) return 'else{' + val + '}'
+          return (idx>0?'else ':'') + 'if(' + val + ')'
+        }
+        return '{' + val + '}'
+      }).join('')
+    },
+    'switch': function (args) {
+      verify_args('switch',args,3,0)
+      args = args.map(compile_token)
+      return 'switch(' + args[0] + '){' +
+        args.slice(1).map(function(val,idx){
+          if (idx%2==0) {
+            if (idx==args.length-2) return 'default:' + val
+            return 'case ' + val + ':'
+          }
+          return val.join(';') + ';break;'
+        }).join('') + '}'
+    },
+    'while': function (args) {
+      verify_args('while',args,2,0)
+      args = args.map(compile_token)
+      var label = (args.length>2 && args[0][0]==':' ? args.shift().slice(1)+':' : '')
+      return label +
+        'while(' + args[0] + ')' +
+        '{' + args.slice(1).join(';') + '}'
+    },
+    'iter': function (args) {
+      verify_args('iter',args,3,0)
+      args = args.map(compile_token)
+      var label = (args.length>3 && args[0][0]==':' ? args.shift().slice(1)+':' : '')
+      return label +
+        'for(' + args[0] + ' in ' + args[1] + ')' +
+        '{' + args.slice(2).join(';') + '}'
+    },
+    'continue': function (args) {
+      verify_args('continue',args,0,1)
+      if (args.length == 0)
+        return 'continue'
+      if (!is_symbol(args[0])) error('continue: first argument must be a symbol')
+      return 'continue ' + args[0]
+    },
+    'break': function (args) {
+      verify_args('break',args,0,1)
+      if (args.length == 0)
+        return 'break'
+      if (!is_symbol(args[0])) error('break: first argument must be a symbol')
+      return 'break ' + args[0]
+    },
+    'try': function (args) {
+      verify_args('try',args,2,3)
+      args = args.map(compile_token)
+      return 'try{' + args[0] + '}' +
+        'catch(_err){' + args[1] + '}' +
+        (args.length==3?'finally{' + args[2] + '}':'')
+    },
+    'throw': function (args) {
+      verify_args('throw',args,1,1)
+      return 'throw ' + compile_token(args[0]) + ''
+    },
+    'assert': function (args) {
+      verify_args('assert',args,2,2)
+      args = args.map(compile_token)
+      return 'if(!(' + args[0] + '))throw ' + args[1]
+    },
+    'new': function (args) {
+      verify_args('new',args,1,0)
+      args = args.map(compile_token)
+      return '(new ' + args[0] + '(' + args.slice(1).join(',') + '))'
+    },
+    'chain': function (args) {
+      verify_args('chain',args,2,0)
+      return '(' + compile_token(args[0]) + '(' +
+        args.slice(1).map(function(item) {
+          if (!is_list(item))
+            error('chain: all arguments after first must be lists')
+          return item.map(compile_token).join(',')
+        }).join(')(') + '))'
+    },
+    'fapply': function (args) {
+      verify_args('fapply',args,2,0)
+      var ret = '(' + compile_token(args[0]) + ')'
+      args.slice(1).map(function(item){
+        if (!is_symbol(item) && !is_functional(item)) {
+          println(item)
+          error('fapply: all arguments after first must be symbols or function objects')
+        }
+        ret = '(' + compile_token(item) + ret + ')'
+      })
+      return ret
     },
     'instanceof': function (args) {
       verify_args('instanceof',args,2,2)
@@ -429,12 +457,12 @@ Liscript_compiler = function (reader) {
       var selec = compile_token(args[0])
       return '(arguments.length>' + selec + '?arguments[' + selec + ']:undefined)'
     },
-    'block': function (args) {
-      verify_args('block',args,1,0)
-      return '{' + args.map(compile_token).join(';') + '}'
-    },
     'nop':function (args) {
       return ''
+    },
+    'stmt': function (args) {
+      args = args.map(compile_token)
+      return '{' + args.join(';') + '}'
     },
     'neg': function (args) {
       verify_args('neg',args,1,1)
@@ -451,17 +479,15 @@ Liscript_compiler = function (reader) {
       if (!is_arguments_list(args[1]))
         error('macro: second argument must be a list')
       var ret = compile_token(args[args.length-1])
-      var func = 'new Function("' + args[1].join('","') + '","' +
-        escape_double_quotes(args.slice(2,-1).map(compile_token).join(';')) +
-        escape_double_quotes(';return ' + ret) +
-        '")'
+      var func = 'function(' + args[1].join(',') + '){' +
+        args.slice(2,-1).map(compile_token).join(';') +
+        (ret.length>0? ';return ' + ret :'') + '}'
       macros[args[0]] = eval(func)
       return ''
     },
     'quote': function (args) {
       return '"' + escape_double_quotes(
-        args.map(compile_token).join(',')
-          .replace(/\\/g,'\\\\\\')
+        args.map(compile_token).join(',').replace(/\\/g,'\\\\\\')
         ) + '"'
     },
   }
@@ -506,12 +532,8 @@ Liscript_compiler = function (reader) {
     }
   })(oper)}
   function function_call (token) {
-    if (is_number(token[0]) || is_string(token[0]) || is_array(token[0]) || is_object(token[0]))
-      error('<function_call>: invalid token')
     if (macros[token[0]]) {
-      return macros[token[0]].apply(this, token.slice(1).map(
-        function (item) {return eval(compile_token(item))}
-      ))
+      return macros[token[0]].apply(this, token.slice(1))
     }
     return '(' + compile_token(token[0]) + '(' + token.slice(1).map(compile_token).join(',') + '))'
   }
@@ -522,7 +544,7 @@ Liscript_compiler = function (reader) {
       }
       return function_call(token)
     }
-    return token
+    return token.toString()
   }
   function compile_all () {
     var out = '', token
@@ -534,6 +556,7 @@ Liscript_compiler = function (reader) {
       .replace(/return \(/g,'return(')
       .replace(/;}/g,'}')
       .replace(/! \(/g,'!(')
+      .replace(/;;/g,';')
     return out + '\n'
   }
   this.builtins = builtins

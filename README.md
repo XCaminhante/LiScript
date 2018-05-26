@@ -1,236 +1,318 @@
 # LiScript
-LiScript replaces JavaScript's syntax by lisp's powerful S-expressions and macro system.
+LiScript substitui a sintaxe JS com as poderosas expressões S(imbólicas) e as macros de Lisp.
+A linguagem ainda está instável, tenha paciência.
 
-#### Using the compiler
-I've implemented a reader interface system, that permits the compiler to operate uniformly over any type of input.
-An example using the "plain text" reader (the only one implemented at the moment):
+### Usando o compilador
+Escrevi um sistema de interface de leitor de código, assim o compilador não precisa saber de onde o código está vindo.
+Um exemplo usando o leitor de texto simples (o único implementado até o momento):
 ```
 var program = '(chain a (1) (2 3))'
 var reader = new Reader_plain_text(program)
 var compi = new Liscript_compiler(reader)
 var ret = compi.compile_all()
+// Ou:
+var program = '(chain a (1) (2 3))'
+var compi = new Liscript_compiler()
+compi.parser.def_reader(new Reader_plain_text(program))
+var ret = compi.compile_all()
+// ...
 eval(ret)
 ```
 
-#### LiScript Fundamentals
+### Fundamentos de LiScript
 
-LiScript is a tiny layer on top of JavaScript. It has some basic forms, which map directly to their JavaScript counterparts:
+LiScript se apoia fortemente sobre o interpretador JS abaixo, modificando pouco além da sintaxe.
+Ela tem algumas formas básicas que mapeiam diretamente para suas contrapartes em JS:
 
-* String: `"this is a string"`
-* Array: `["this" "is" "an" "array"]`
-* Object: `{foo 5 "bar" 7}`
-* Regular Expression: `#/[^a]$/g` 
-(yes, a hash symbol followed by the regexp as you knows it)
-* Function calling: `(func 1 2 3)`
+* Texto: `"this is a string"`
+* Vetor: `["this" "is" "an" "array"]`
+* Objeto: `{foo 5 "bar" 7}`
+* Expressão regular: `/[^a]$/g`
+* Chamada de função: `(func 1 2 3)`
 
-In Lisp everything is a expression, i.e., every command can be replaced by the value it returns (if you ignore the side effects, of course).
-Unfortunately, not all LiScript's words can return values because there are constructs in JavaScript that are statements, they can't be used in place of expressions.
-Actually, these words are `let ret ifret throw error type_error block`.
-You still can use these in places that accept statements, or create a closure when necessary.
+Fora essas formas básicas, LiScript possui palavras reservadas que operam sobre dados ou código, e quando usadas são
+compiladas para código JS. Você as invoca envolvendo a chamada com parêntesis, assim como na forma de chamada de
+função. A forma de chamada é prefixa, ou seja, o verbo/nome/função sempre vem antes dos argumentos.
 
-Commentaries:
+Em Lisp, tudo é uma expressão, isto é, cada comando pode ser substituído pelo valor que retorna (se você ignorar os
+efeitos secundários, claro).
+Infelizmente nem todas as construções LiScript retornam valores porque existem construtos em JS que são declarações,
+eles não podem ser usados no lugar de expressões.
+As instruções em LiScript que emitem declarações em JS são `return let cond switch while iter continue break try
+assert label`. Você pode as usar na maior parte dos lugares no código, ou criar um fechamento se preciso.
+
+### Comentários
+Usamos o marcador de comentário tradicional de Lisp:
 ```
-; This is a single-line comment
-(code) ; You can place your comments anywhere
-; Just remember that everything between the semicolon and the end of the line will be ignored by the compiler
+; Isso é uma linha de comentário
+(code) ; Tudo do ponto-e-vírgula até o final da linha é ignorado pelo compilador
 ```
 
-Builtin functions:
+### Palavras reservadas (por categorias)
 
-* Math operators: `+ - * / % neg`
+* Operadores matemáticos: `+ - * / % neg !`
+* Comparações lógicas: `and or xor same = != < > <= >= instanceof`
+* Operadores de atribuição: `+= -= *= /= %=`
+* Operadores bit-a-bit: `<< >> >>> & | ^`
+* Atribuição (múltipla): `def let`
+* Acessar e manipular membros/propriedades: `get : set := .`
+* Condicionais: `if cond switch`
+* Funções e fechamentos: `function lambda closure return`
+* Tratamento de erros: `throw assert try`
+* Instanciar objetos: `new`
+* Laços: `while iter continue break`
+* Chamadas: `chain fapply`
+* Conveniências: `nop quote macro`
+
+### Exemplos de código e explicações das instruções
+
 ```
 (+ 1 2 3 (* 2 2))
-; 10
+; 1+2+3+(2*2) = 10
 (neg 1)
 ; (-1)
-```
-* Boolean comparisons: `and or xor same = != < > <= >= instanceof`
-```
+
 (= 2 2)
 ; true
 (xor true true)
 ; false
-```
-`same` is the equivalent of `===` in JavaScript, `=` is the equivalent of `==`.
 
-* Modifying attribution operators: `+= -= *= /= %=`
-```
+; 'same' é o equivalente de '===' em JS, '=' é o equivalente de '=='
+
 (let a 1) (+= a 1)
-```
-* Bitwise operators: `<< >> >>> & | ^`
-* Generic (multiple) assignment: `def`
-```
-(def abc 1 def 2 ghi 3)
-; abc=1, def=2, ghi=3
-```
-* Local (multiple) assignment: `let`
+; a = 2
 
-`let` doesn't create a valid JavaScript expression (i.e. you can't expect a value coming from a `let` call).
-I strongly recommend to always use `let`, except if you really want to create global variables.
-```
+(def abc 1 def 2 ghi 3)
+; abc=1, def=2, ghi=3 // redefine valores ou cria variáveis globais
+
 (let abc 1 def 2 ghi 3)
-; var abc=1, def=2, ghi=3
-```
-* Conditionals: `if cond switch`
-```
+; var abc=1, def=2, ghi=3 // define localmente
+
+(console.log (get a 0 1))
+; console.log(a[0][1])
+(: a 1)
+; É o mesmo que '(get a 1)' ou 'a[1]'
+
+(set a 1 2 valor)
+; a[1][2] = valor
+(:= a "propriedade" 2 valor)
+; Mesmo que '(set a "propriedade" 2 valor)' ou 'a["propriedade"][2] = valor'
+
+
 (let rnd (Math.random))
 (if (< rnd 0.5)
-    (console.log "You won :D")
-    (console.log "Bad luck, try again."))
-; Output: who knows?
-```
-`cond` does successive logical tests inside a closure:
-```
+    (console.log "Ganhou :D")
+    (console.log "Má sorte, tente de novo."))
+; Saída: depende do valor de 'rnd'
+
+; 'if' apenas aceita um teste, uma expressão à ser retornada se o teste der verdadeiro e opcionalmente uma expressão
+;   para o caso falso.
+
+
 (cond
-    (and (< a 5) (> a 1))  (console.log "first case")
-    (and (< a 10) (>= a 5))  (console.log "second case")
-    (console.log "none of the above") )
+    (and (< a 5) (> a 1))  (console.log "Caso 1")
+    (and (< a 10) (>= a 5))  (console.log "Caso 2")
+    (console.log "N.D.A.") )
 ; if ((a<5)&&(a>1)) {...} else if ((a>=5)&&(a<10)) {...} else {...}
-```
-`switch` is like the JavaScript's `switch`, but dressed in a new syntax (and inside a closure).
-It expects a value, and test-evaluate expression pairs. If one expression remais alone in the end, it falls into the `default:` case. You can return a value from the closure using `ret`, of course.
-```
+
+; 'cond' realiza testes lógicos em sequência, o primeiro que resultar verdadeiro executa o conteúdo do seu braço
+; Os testes veem em pares de valor de teste e braço condicional.
+; Se um braço vier sobrando no final, ele usa a condição 'else', isto é, executa se todos os testes anteriores falharem.
+
+
 (let value 1)
 (switch value
-        1 (console.log "One")
-        2 (console.log "Two")
-        3 (console.log "Three")
-        (console.log "Default") )
-; Output: "One"
-```
-* Functions and closures: `fun lam ret ifret do block`
-```
-(fun (a b) (+ a b))
+        1 (console.log "Um")
+        2 (console.log "Dois")
+        3 (console.log "Três")
+        (console.log "N.D.A.") )
+; Saída: "Um"
+
+; o 'switch' da LiScript é semelhante ao da JS, mas adaptado para a nova sintaxe.
+; Os testes veem em pares de valor de teste e braço condicional. Apenas um executa dependendo do valor.
+; Se um braço vier sobrando no final, ele usa a condição 'default'.
+
+
+(function (a b) (+ a b))
 ; function (a,b) { return a+b; };
-```
-`lam` is a function with only one fixed argument name: `_`. Intended for quick jobs.
-```
-(lam (+ _ 1))
-; function (_) { return _+1; };
-```
-`ret` exits the function prematurely. `ifret` only exits the function if a condition holds.
+(lambda (+ _ 1))
+; function (_) { return _+1 }
+(closure (a 1 b 2)
+  (return (+ a b)) )
+; (function (a,b) { return a+b }) (1,2)
 
-Note that `return` isn't a valid expression in JavaScript (i.e. you can't do `var a = return 1;`)
-```
-(fun (a b) (ret 4) (+ a b))
-; function (a, b) { return 4; return a+b; };
-(fun (a b) (ifret (> a 3) 4) (+ a b))
-; function (a, b) { if (a>3) return 4; return a+b; };
-```
-`do` stacks expressions with commas:
-```
-(do (do_something 1) (do_something 2) (do_something 3))
-; do_something(1),do_something(2),do_something(3)
-```
-`block` creates a block of expressions. Statements allowed:
-```
-(block (do_something 1) (do_something 2) (do_something 3))
-; do_something(1);do_something(2);do_something(3)
-```
-* Member access: `get set .`
-```
-(def my_obj {a 1 b 2 c 3})
-(set my_obj "b" 4)
-; my_obj["b"] = 4;
-(console.log (get my_obj "b"))
-; console.log( my_obj["b"] );
-; Output: 4
-```
-The dot operator (`.`) is very useful to accessing fluent interfaces (chained named function calls) and deep properties.
-```
-(let a "12345")
-(def a (. a (replace "1" "9") (replace "3" "7") ) )
-; a.replace("1","9").replace("3","7")
-(console.log a)
-; Output: "92745"
-```
-* Instantiating a object: `new`
-```
-(new MyClass 1 2 3)
-; new MyClass(1,2,3)
-```
-* Loop: `while`
+; 'function' cria uma função comum, 'lambda' também mas com um único argumento fixo.
+; A última expressão que aparecer no corpo de 'function' ou 'lambda' é automaticamente retornada.
+; Se você não quiser retornar um valor, pode usar a instrução '(nop)'.
+; 'closure' cria um fechamento, que te permite criar variáveis temporárias. 'closure' não retorna nenhum valor por
+;   padrão, já que essa instrução foi pensada para criar escopos.
 
-`while` runs a while-loop inside a closure. It expects 3 or 4 arguments: preset commands (runs before the loop), loop test, loop body and (optionally) a after-loop body.
-```
-(while (let i 0) (< i 4)
-       (do (console.log i) (+= i 1))
-       (ret i) )
-; Output: 0 1 2 3
-```
-* Iteration: `iter`
+(throw "Condição insuficiente")
+; throw("Condição insuficiente")
+(assert (= a 1) "Valor incorreto")
+; if(!(a==1)) { throw "Valor incorreto" }
 
-`iter` iterates over an object. It expects 2 or 3 arguments: the object to be iterated, the iteration code body, and (optionally) a after-iteration body.
+; 'throw' e 'assert' permitem acionar o sistema de excessões de JS.
+; 'assert' apenas dispara a excessão se o valor do teste resultar em falso.
 
-It binds 3 temporary variables:
+(try
+  (throw "Teste")
+  (console.log _err) )
+; try { throw "Teste" } catch (_err) { console.log(_err) }
+(try
+  (throw "Teste")
+  (console.log _err)
+  (console.log "Finalize!") )
+; try { throw "Teste" } catch (_err) { console.log(_err) } finalize { console.log("Finalize!") }
 
-`obj_`: the object being iterated;
-`key`: the key being accessed at the moment;
-`val`: the value being accessed at the moment.
-```
-(iter {a 1 b 2 c 3}
-      (console.log [key val]))
-; Output: ["a",1] ["b",2] ["c",3]
-```
-* Function chain calling: `chain`
+; 'try' nos permite executar código capturando uma excessão que seja disparada por ele para tratamento.
+; Essa instrução aceita por padrão 2 corpos, o de teste e o de tratamento. Opcionalmente você pode passar um terceiro,
+;   de finalização.
 
-With `chain` you can conveniently call a function returned by a function, returned by a function, returned...
-```
-(chain func (1 2 3) (4 5 6) (7 8 9))
-; func(1,2,3)(4,5,6)(7,8,9)
-; That is cleaner than it's equivalent in plain syntax:
-(((func 1 2 3) 4 5 6) 7 8 9)
-```
-* Exceptions: `try throw error type_error`
+(let a (new Number "12.34"))
+; var a = new Number("12.34")
 
-`try` tries to run a piece of code inside a closure, and runs the second body (`catch` body) if a exception was thrown. If present, a third body (`finally` body) is evaluated at the end. The `catch` body binds the thrown exception at `_` variable.
-```
-(try (block (something 1) (something 2) )
-     (deal_with_error _)
-     (block (finally_do 1) (finally_do 2)) )
-; try {
-;   something(1); something(2);
-; } catch (_) {
-;   deal_with_error(_);
-; } finally {
-;  finally(1); finally(2);
-; }
-```
-Note that `throw` isn't a valid JavaScript expression, it's a statement (it doesn't return a value).
-```
-(throw "Incorrect value")
-; throw("Incorrect value");
-```
-`error` throws a `Error()` exception, passing the arguments forward. `type_error` throws a `TypeError()` exception.
+(let a 1)
+(while (<= a 5)
+  (console.log a) (+= a 1) )
+; Saída: 1 2 3 4 5
 
-* Conveniences: `nop args __COLUMN __LINE`
+(def a 1)
+(while :rotulo (<= a 5)
+  (console.log a) (break rotulo) (+= a 1) )
+; Saída: 1
 
-`nop` doesn't emit JavaScript code, and ignores its arguments. It's the LiScript no-op.
+; 'while' exige um corpo de teste, e um ou mais corpos de instruções. Opcionalmente o primeiro argumento pode ser um
+;   símbolo começando em dois-pontos, tal como no exemplo ':rotulo'.
+;  Esse símbolo nomeia o laço, permitindo que você o controle usando 'break' e 'continue'. Se você criar vários laços
+;   um dentro do outro, 'break' pode pular para fora de vários deles de uma vez com precisão, e 'continue' reinicia
+;   a execução do laço nomeado.
 
-Whenever the pseudo-variables `__LINE` and `__COLUMN` appear, they're replaced by the actual line or column in the LiScript source-code.
+; Aliás, o seguinte código é um laço infinito:
+(while :rotulo (<= a 5)
+  (console.log a) (continue rotulo) (+= a 1) )
+
+
+(let a [1 2 3 4 5])
+(iter indice a
+  (console.log (: a indice)) )
+; for (indice in a) { console.log(a[indice]) }
+
+; 'iter' usa um laço "for-in" para iterar sobre os membros de um objeto. Essa instrução também aceita um símbolo de
+;   rótulo.
+
+; 'continue' e 'break' podem ser usados sem rótulo também:
+(break) (continue)
+
+
+chain fapply
+(let
+  ; Função fatorial curryficada
+  fatorial (function (proc)
+    (function (n)
+      (if (<= n 1)
+        1
+        (* n (proc (- n 1))) )))
+  ; Combinador Y
+  Y (function (exter)
+    (let inter (function (proc)
+      (let aplica (function (arg)
+        (chain proc (proc)(arg)) ))
+      (exter aplica) ))
+    (inter inter) )
+)
+(console.log (+ "5! é " (chain Y (fatorial)(5)) ))
+
+; 'chain' nos permite chamar uma função retornando de uma funcão, retornando de uma função...
+; Ou seja, o código abaixo:
+(chain Y (fatorial)(5))
+; Emite na compilação: Y(fatorial)(5)
+
+
+(let a 1)
+(fapply a
+  (lambda (* _ 2))
+  (lambda (+ _ 1))
+  console.log )
+; Saída: 3
+
+; 'fapply' aplica sucessivas funções à um objeto inicial, retornando o resultado da última função.
+; Cada resultado anterior é passado como argumento para a função seguinte.
+
+(console.log (. "12345"
+  (replace "1" "9")
+  (replace "4" "-") ))
+; console.log( "12345" .replace("1","9") .replace("4","-") )
+; Saída: "923-5"
+
+; O operador ponto '.' nos permite acessar propriedades e funções-membro do objeto usando a sintaxe de ponto de JS.
+; Se você envolver um nome com parêntesis, estará chamando uma função; se apenas entrar o nome, acessa como propriedade.
+
+(nop)
+; Não emite nenhum código, é uma não-operação. Existem lugares onde ela pode ser útil.
+
+(let a (quote (console.log b)) )
+(let b 3) (eval a)
+(def b 5) (eval a)
+; Saída: 3 5
+; 'quote' retorna o código compilado dentro de si como uma string. As variáveis não são substituidas, já que esse
+;   processo acontece durante a compilação.
+
+
+
+; Nenhum dialeto Lisp é completo sem macros!
+; Uma macro é uma função especial que permite extender a linguagem original. Você pode criar suas próprias palavras
+;   reservadas, que vão se comportar idênticas às originais. Você até pode sobreescrever as palavras originais, desse
+;   modo atualizando o compilador!
+; Em LiScript, as macros executam durante o tempo de compilação e podem acessar as funções internas do compilador,
+;   por isso elas tem poder equivalente às palavras reservadas da linguagem.
+; Você só precisa retornar uma string com o resultado em JS, essa string será emitida na compilação quando a macro
+;   for invocada.
+
+; Um exemplo prático. ECMA2015 introduziu na JS o protocolo iterable e as funções geradoras.
+; As funções geradoras possuem um asterisco antes da lista de argumentos, e podem usar a palavra reservada 'yield'.
+; Nosso compilador não pode as emitir sozinho, pois elas tem sintaxe diferenciada. Mas podemos escrever uma macro!
+(macro generator (argslist)
+  ; 'verify_args' confere se o número de argumentos é válido.
+  ; Nesse caso estamos esperando no mínimo 2 parâmetros para nossa macro, sem limite máximo.
+  (verify_args "gen" arguments 2 0)
+  ; 'is_arguments_list' é uma função de validação de tipo; existem várias para os diferentes tipos de entradas que o
+  ;   parser retorna.
+  (assert (is_arguments_list argslist)
+    ; 'error' aciona o mecanismo interno de erros do compilador, de modo que você fica sabendo a linha no seu código
+    ;   onde o erro aconteceu. Seu propósito principal é barrar sintaxe incorreta.
+    (error "gen: first argument must be a list"))
+  (let body (Array.prototype.slice.call arguments 1 -1))
+  (let ret (compile_token (args (- arguments.length 1))))
+  ; As macros recebem os tokens diretamente do parser, então é responsabilidade delas compilar o que for necessário.
+  ; Você faz isso invocando 'compile_token'.
+  (+
+    "(function*(" (. (args 0) (map compile_token) (join ",")) ")"
+    "{" (. body (map compile_token) (join ";"))
+    (if (> ret.length 0) (+ ";return " ret) "") "})")
+)
+
+; Desde ECMA2015, 'for-each' é uma construção depreciada, devemos agora usar 'for-of' para iterar valores.
+; Perceba que nossa instrução 'iter' emite um laço 'for-in', que itera os índices.
+(macro for_of (value object)
+  (verify_args "for_of" arguments 3 0)
+  (let actions (Array.prototype.slice.call arguments 2))
+  (+
+    "for(" (compile_token value) " of " (compile_token object) ")"
+    "{" (. actions (map compile_token) (join ";")) "}")
+)
+
+(let
+  ; Uma função geradora muito simples
+  a (generator (x)
+    (yield x)
+    (yield (- x 1)) (nop) )
+  ; 'b' agora contém um objeto iterável.
+  b (a 8)
+)
+; Os valores retornados por 'b' são calculados em tempo real pelo conteúdo da função 'a'.
+(for_of val b
+  (console.log val) )
+; Saída: 8 7
+
 ```
-(console.log __COLUMN)(console.log __LINE)
-; Output: 14 1
-```
-
-`args` accesses the `arguments` array-like object. It only allows reading:
-```
-(args 1)
-; (arguments.length>1 ? arguments[1] : undefined)
-```
-
-* Macros: `macro`
-
-Macros are metafunctions that permit you to extend the compiler.
-They use the same LiScript syntax, but they run at compile time. The compiler outputs their returns in the place the macros are invoked.
-```
-(macro prn (in)
-  ; I run code at compile time
-  (+ "alert('Hello " in "')") )
-; this emits "alert('Hello 1')" in the compiler output
-(prn (+ "" 1)) 
-```
-
-~~* Readers: `defreader`~~
-
-*(Readers aren't functional at the moment...)*
