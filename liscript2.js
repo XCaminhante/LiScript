@@ -39,7 +39,7 @@ Liscript_parser = function (reader) {
   var spaces = ' \n\t\x0C\u2028\u2029\xA0'
     escape_bar = '\\',
     start_regexp = '/',
-    regexp_bar = '/', modes_regex = 'ymgiu',
+    regexp_bar = '/', regexp_modes = 'ymgiu',
     commentary_start = ';',
     simple_quotes = "'",
     double_quotes = '"',
@@ -143,7 +143,7 @@ Liscript_parser = function (reader) {
   function read_regexp () {
     var body = read_delimited(regexp_bar,regexp_bar,1)
     var modes = read_while(function (ch) {
-      return contained_in(ch, modes_regex)
+      return contained_in(ch, regexp_modes)
     })
     return new RegExp( body, modes )
   }
