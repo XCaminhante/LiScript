@@ -479,7 +479,7 @@ Liscript_compiler = function (reader) {
       if (!is_arguments_list(args[1]))
         error('macro: second argument must be a list')
       var ret = compile_token(args[args.length-1])
-      var func = 'function(' + args[1].join(',') + '){' +
+      var func = 'func = function(' + args[1].join(',') + '){' +
         args.slice(2,-1).map(compile_token).join(';') +
         (ret.length>0? ';return ' + ret :'') + '}'
       macros[args[0]] = eval(func)
@@ -557,6 +557,7 @@ Liscript_compiler = function (reader) {
       .replace(/;}/g,'}')
       .replace(/! \(/g,'!(')
       .replace(/;;/g,';')
+      .replace(/^;|;$/g,'')
     return out + '\n'
   }
   this.builtins = builtins
@@ -571,4 +572,10 @@ Liscript_compiler = function (reader) {
   this.is_array = is_array
   this.is_object = is_object
   this.is_arguments_list = is_arguments_list
+}
+
+module.exports = {
+  "Reader_plain_text": Reader_plain_text,
+  "parser": Liscript_parser,
+  "compiler": Liscript_compiler,
 }

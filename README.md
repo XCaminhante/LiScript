@@ -3,7 +3,16 @@ LiScript substitui a sintaxe JS com as poderosas expressões S(imbólicas) e as 
 A linguagem ainda está instável, tenha paciência.
 
 ### Usando o compilador
-Escrevi um sistema de interface de leitor de código, assim o compilador não precisa saber de onde o código está vindo.
+LiScript possui uma interface de console em node.js.
+Experimente compilar os exemplos que acompanham o compilador, depois os executar:
+```
+node compilar_liscript.js t.lisp t2.lisp
+node t.js
+node t2.js
+```
+
+Escrevi um sistema de interface de leitor de código, assim o núcleo do compilador não precisa saber de onde o código
+está vindo.
 Um exemplo usando o leitor de texto simples (o único implementado até o momento):
 ```
 var program = '(chain a (1) (2 3))'
