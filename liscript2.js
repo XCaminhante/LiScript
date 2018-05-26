@@ -263,16 +263,16 @@ Liscript_compiler = function (reader) {
       return ret.replace(/,\}$/g,'}')
     },
     'function': function (args) {
-      verify_args('fun',args,2,0)
+      verify_args('function',args,2,0)
       if (!is_arguments_list(args[0]))
-        error('fun: invalid arguments list')
+        error('function: invalid arguments list')
       var ret = compile_token(args[args.length-1])
       return '(function(' + args[0].map(compile_token).join(',') + '){' +
         args.slice(1,-1).map(compile_token).join(';') +
         (ret.length>0? ';return ' + ret :'') + '})'
     },
     'lambda': function (args) {
-      verify_args('lam',args,1,0)
+      verify_args('lambda',args,1,0)
       var ret = compile_token(args[args.length-1])
       return '(function(_){' +
         args.slice(0,-1).map(compile_token).join(';') +
@@ -295,7 +295,7 @@ Liscript_compiler = function (reader) {
         }).map(compile_token).join(',') + ')'
     },
     'return': function (args) {
-      verify_args('ret',args,1,1)
+      verify_args('return',args,1,1)
       return 'return ' + compile_token(args[0])
     },
     'set': function (args) {
