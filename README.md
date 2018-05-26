@@ -214,7 +214,6 @@ Usamos o marcador de comentário tradicional de Lisp:
 (break) (continue)
 
 
-chain fapply
 (let
   ; Função fatorial curryficada
   fatorial (function (proc)
