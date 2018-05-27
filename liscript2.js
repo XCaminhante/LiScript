@@ -36,7 +36,7 @@ Reader_plain_text.prototype = {
 }
 
 Liscript_parser = function (reader) {
-  var spaces = ' \n\t\x0C\u2028\u2029\xA0'
+  var spaces = ' \n\t\x0C\u2028\u2029\xA0',
     escape_bar = '\\',
     regexp_start = '/',
     regexp_bar = '/', regexp_modes = 'ymgiu',
@@ -95,15 +95,15 @@ Liscript_parser = function (reader) {
     next()
   }
 
-  function read_delimited (start, end, include_escape) {
-    skip(start)
+  function read_delimited (start, end, dont_skip_start) {
     var escape = false, out = ''
+    if (!dont_skip_start) skip(start)
     while ((carac = peek())) {
       if (escape) {
         out += carac
         escape = false
       } else if (carac == escape_bar) {
-        if (include_escape) out += carac
+        out += carac
         escape = true
       } else if (carac == end) {
         break
@@ -138,10 +138,14 @@ Liscript_parser = function (reader) {
   }
 
   function read_text (quotes) {
-    return ['_str', read_delimited(quotes,quotes,1)]
+    return ['_str', read_delimited(quotes,quotes)]
   }
   function read_regexp () {
-    var body = read_delimited(regexp_bar,regexp_bar,1)
+    var ch = next()
+    if (end_symbol.indexOf(ch) != -1) {
+      return '/'
+    }
+    var body = read_delimited(ch,regexp_bar,1)
     var modes = read_while(function (ch) {
       return contained_in(ch, regexp_modes)
     })
