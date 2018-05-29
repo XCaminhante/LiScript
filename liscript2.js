@@ -46,6 +46,7 @@ Liscript_parser = function (reader) {
     open_list = '(', close_list = ')',
     open_array = '[', close_array = ']',
     open_object = '{', close_object = '}',
+    comma = ',',
     end_symbol = spaces
       .concat(regexp_start) .concat(commentary_start) .concat(double_quotes) .concat(open_list)
       .concat(close_list) .concat(open_array) .concat(close_array) .concat(open_object) .concat(close_object)
@@ -173,6 +174,9 @@ Liscript_parser = function (reader) {
     ext: while (true) {
       skip_space()
       switch (peek()) {
+      case comma:
+        next()
+        continue ext
       case commentary_start:
         skip_commentary()
         continue ext
@@ -336,7 +340,7 @@ Liscript_compiler = function (reader) {
           if (is_array(item)) {
             return '[' + item.slice(1).map(compile_token).join('][') + ']'
           }
-          return '.' + compile_token(item)
+          return '.' + compile_token(item).replace(/^\(|\)$/g,'')
         })
         .join('') + ')'
     },
