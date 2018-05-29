@@ -330,11 +330,20 @@ Liscript_compiler = function (reader) {
     },
     '.': function (args) {
       verify_args('.',args,2,0)
-      return '(' + compile_token(args[0]) + '.' +
+      return '(' + compile_token(args[0]) +
         args.slice(1)
-        .map(compile_token)
-        .map(function(a){return a.replace(/^\(|\)$/g,'')})
-        .join('.') + ')'
+        .map(function(item){
+          var ret = ''
+          if (is_array(item)) {
+            for (var a = 1; a < item.length; a++) {
+              ret += '[' + compile_token(item[a]) + ']'
+            }
+          } else {
+            ret = '.' + compile_token(item)
+          }
+          return ret
+        })
+        .join('') + ')'
     },
     'let': function (args) {
       verify_args('let',args,2,0,1)
