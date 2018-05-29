@@ -339,8 +339,8 @@ Liscript_compiler = function (reader) {
     'let': function (args) {
       verify_args('let',args,2,0,1)
       args = args.map(compile_token)
-      return '{' + args.map(function(val,idx){
-        return val + (idx%2? ';' :'=')
+      return '{var ' + args.map(function(val,idx){
+        return val + (idx%2? ',' :'=')
       }).join('').slice(0,-1) + '}'
     },
     'if': function (args) {
@@ -555,14 +555,13 @@ Liscript_compiler = function (reader) {
     while( (token = this.parser.read_token()) ) {
       out += compile_token(token) + ';'
     }
-    out = out
+    return out
       .replace(/{;/g,'{')
-      .replace(/return \(/g,'return(')
       .replace(/;}/g,'}')
-      .replace(/! \(/g,'!(')
-      .replace(/;;/g,';')
-      .replace(/^;|;$/g,'')
-    return out + '\n'
+      .replace(/ \(/g,'(')
+      .replace(/\) /g,')')
+      .replace(/;;/g,';') +
+      '\n'
   }
   this.builtins = builtins
   this.compile_all = compile_all

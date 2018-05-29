@@ -6,6 +6,22 @@ function erro (msg) {
   process.exit(1)
 }
 
+Reader_file_node = function (path) {
+  this.column = 1
+  this.line = 1
+  this.path = path
+  this.file = fs.openSync(path,'rs')
+}
+
+Reader_file_node.prototype = {
+  peek: function () {},
+  next: function () {},
+  reset: function () {},
+  toString: function () {
+    return '<File ' + this.path + ' >'
+  },
+}
+
 if (process.argv.length <= 2) {
   erro('Uso: node compilar_liscript.js arq1.lisp [arq2.lisp ... arqN.lisp]')
 }
