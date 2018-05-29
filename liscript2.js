@@ -333,15 +333,10 @@ Liscript_compiler = function (reader) {
       return '(' + compile_token(args[0]) +
         args.slice(1)
         .map(function(item){
-          var ret = ''
           if (is_array(item)) {
-            for (var a = 1; a < item.length; a++) {
-              ret += '[' + compile_token(item[a]) + ']'
-            }
-          } else {
-            ret = '.' + compile_token(item)
+            return '[' + item.slice(1).map(compile_token).join('][') + ']'
           }
-          return ret
+          return '.' + compile_token(item)
         })
         .join('') + ')'
     },
