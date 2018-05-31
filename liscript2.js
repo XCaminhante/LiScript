@@ -393,7 +393,7 @@ Liscript_compiler = function (reader) {
       args = args.map(compile_token)
       var label = (args.length>3 && args[0][0]==':' ? args.shift().slice(1)+':' : '')
       return label +
-        'for(' + args[0] + ' in ' + args[1] + ')' +
+        'for(var ' + args[0] + ' in ' + args[1] + ')' +
         '{' + args.slice(2).join(';') + '}'
     },
     'continue': function (args) {
