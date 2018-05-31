@@ -467,14 +467,14 @@ Liscript_compiler = function (reader) {
     'args': function (args) {
       verify_args('args',args,1,1)
       var selec = compile_token(args[0])
-      return '(arguments.length>' + selec + '?arguments[' + selec + ']:undefined)'
+      return '(arguments.length>' + selec + '?arguments[' + selec + ']:null)'
     },
     'nop':function (args) {
       return ''
     },
     'stmt': function (args) {
       args = args.map(compile_token)
-      return '{' + args.join(';') + '}'
+      return args.join(';')
     },
     'neg': function (args) {
       verify_args('neg',args,1,1)
