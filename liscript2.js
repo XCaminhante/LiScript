@@ -440,13 +440,13 @@ Liscript_compiler = function (reader) {
           return item.map(compile_token).join(',')
         }).join(')(') + '))'
     },
-    'fapply': function (args) {
-      verify_args('fapply',args,2,0)
+    'pipe': function (args) {
+      verify_args('pipe',args,2,0)
       var ret = '(' + compile_token(args[0]) + ')'
       args.slice(1).map(function(item){
         if (!is_symbol(item) && !is_functional(item)) {
           println(item)
-          error('fapply: all arguments after first must be symbols or function objects')
+          error('pipe: all arguments after first must be symbols or function objects')
         }
         ret = '(' + compile_token(item) + ret + ')'
       })

@@ -70,7 +70,7 @@ Usamos o marcador de comentário tradicional de Lisp:
 * Tratamento de erros: `throw assert try`
 * Instanciar objetos: `new`
 * Laços: `while iter continue break`
-* Chamadas: `chain fapply`
+* Chamadas: `chain pipe`
 * Conveniências: `nop quote macro`
 
 ### Exemplos de código e explicações das instruções
@@ -238,13 +238,13 @@ Usamos o marcador de comentário tradicional de Lisp:
 
 
 (let a 1)
-(fapply a
+(pipe a
   (lambda (* _ 2))
   (lambda (+ _ 1))
   console.log )
 ; Saída: 3
 
-; 'fapply' aplica sucessivas funções à um objeto inicial, retornando o resultado da última função.
+; 'pipe' aplica sucessivas funções à um objeto inicial, retornando o resultado da última função.
 ; Cada resultado anterior é passado como argumento para a função seguinte.
 
 (console.log (. "12345"
