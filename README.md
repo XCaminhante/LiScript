@@ -6,9 +6,11 @@ A linguagem ainda está instável, tenha paciência.
 LiScript possui uma interface de console em Node.JS.
 Experimente compilar os exemplos que acompanham o compilador, depois os executar:
 ```
-node compilar_liscript.js t.lisp t2.lisp
-node t.js
+node compilar_liscript.js t[1234].lisp
+node t1.js
 node t2.js
+node t3.js
+node t4.js
 ```
 
 Escrevi um sistema de interface de leitor de código, assim o núcleo do compilador não precisa saber de onde o código
